@@ -1,0 +1,22 @@
+# Render blueprint: one web service runs the FastAPI back end and serves the prebuilt React app.
+# In Render: New > Blueprint > pick this repo, then paste PORTKEY_API_KEY when asked.
+services:
+  - type: web
+    name: physioteam
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: PORTKEY_API_KEY
+        sync: false
+      - key: SESSION_CAP_USD
+        value: "0.75"
+      - key: GLOBAL_DAILY_CAP_USD
+        value: "8.00"
+      - key: ACCESS_CODE
+        sync: false

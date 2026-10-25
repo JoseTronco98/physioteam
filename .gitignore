@@ -1,0 +1,22 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# runtime data (generated on first run)
+data/
+output/
+*.db
+
+# front end
+frontend/node_modules/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.claude/
