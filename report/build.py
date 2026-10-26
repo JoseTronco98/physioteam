@@ -1,4 +1,5 @@
-"""Embed every <img src="shots/x.png"> as a JPEG data URI so the report and slides open anywhere.
+"""Embed every <img src="shots/x.png"> as a JPEG data URI, and reveal.js (report/vendor, v5.1.0) inline,
+so the report and slides open offline with a double-click.
 Writes report/out/report.html and slides.html, and copies them to ../../deliverable/ (the Canvas folder) if that folder exists.
 Run: python report/build.py"""
 
@@ -14,6 +15,23 @@ R = Path(__file__).parent
 OUT = R / "out"
 OUT.mkdir(exist_ok=True)
 CANVAS = R.parent.parent / "deliverable"   # Final Project/deliverable (outside the repo)
+
+
+VENDOR = {"reveal.css": "dist/reveal.css", "white.css": "dist/theme/white.css", "reveal.js": "dist/reveal.js"}
+
+
+def inline_reveal(html: str) -> str:
+    for f, path in VENDOR.items():
+        code = (R / "vendor" / f).read_text(encoding="utf-8")
+        url = f"https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/{path}"
+        if f.endswith(".css"):
+            code = re.sub(r"@import url\([^)]*\);", "", code)   # theme web font: system fonts are used instead
+            html, n = re.subn(rf'<link rel="stylesheet" href="{re.escape(url)}"\s*/?>', lambda m: f"<style>{code}</style>", html)
+        else:
+            html, n = re.subn(rf'<script src="{re.escape(url)}"></script>', lambda m: f"<script>{code}</script>", html)
+        if n != 1:
+            raise SystemExit(f"reveal.js reference not found once: {url}")
+    return html
 
 
 def data_uri(path: Path, max_w: int = 1500) -> str:
@@ -38,6 +56,8 @@ for name in ("report", "slides"):
         return f'src="{data_uri(p)}"'
 
     html = re.sub(r'src="(shots/[^"]+\.png)"', repl, html)
+    if name == "slides":
+        html = inline_reveal(html)
     (OUT / f"{name}.html").write_text(html, encoding="utf-8")
     if CANVAS.is_dir():   # only on the author's machine
         shutil.copy(OUT / f"{name}.html", CANVAS / f"{name}.html")
