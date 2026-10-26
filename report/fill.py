@@ -229,14 +229,14 @@ def main():
     plans = evals
     reports = wa["agent_documents"].get("progress_report", 0)
     escal = wa["escalations_now"] + wa["batched_questions"]
-    tasks = [("Patient WhatsApp messages", msgs, m["message"], 0, f"{escal} questions batched for her, ~3 min each"),
+    tasks = [("Patient WhatsApp messages", msgs, m["message"], 0, f"{escal} questions batched for the therapist, ~3 min each"),
              ("Reminders and confirmations", wa["reminders"], m["reminder"], 0, "sent and confirmed in code"),
              ("Initial evaluations", evals, m["evaluation"], review["evaluation"], "read and sign the draft"),
              ("SOAP notes", soaps, m["soap"], review["soap"], "read and sign"),
              ("Treatment plans", plans, m["plan"], review["plan"], "approve; sessions book themselves"),
              ("Progress reports to doctors", reports, m["report"], review["report"], "approve and send")]
     trows = ['<table><tr><th>Task (per week)</th><th class="n">Volume</th><th class="n">Min. by hand</th><th class="n">Min. with PhysioTeam</th>'
-             '<th class="n">Hours before</th><th class="n">Hours after</th><th>What she still does</th></tr>']
+             '<th class="n">Hours before</th><th class="n">Hours after</th><th>What the therapist still does</th></tr>']
     before = after = 0.0
     chart_rows = []
     for name, vol, mb, ma, note in tasks:
@@ -256,10 +256,10 @@ def main():
     rec_mxn = sum(r["mxn"] for r in rec)
     impact = (f'<table><tr><th>In one measured week</th><th class="n">Value</th></tr>'
               f'<tr><td>Patient WhatsApp messages handled</td><td class="n">{wa["inbound"]}</td></tr>'
-              f'<tr><td>… needing her attention now (urgent)</td><td class="n">{wa["escalations_now"]}</td></tr>'
+              f'<tr><td>… needing the therapist&#39;s attention now (urgent)</td><td class="n">{wa["escalations_now"]}</td></tr>'
               f'<tr><td>… routine clinical questions batched for the next session</td><td class="n">{wa["batched_questions"]}</td></tr>'
               f'<tr><td>Outgoing messages sent by code at zero tokens</td><td class="n">{wa["outbound_code"]} of {wa["outbound_code"] + wa["outbound_model"]}</td></tr>'
-              f'<tr><td>Approval cards she tapped</td><td class="n">{sum(v for v in wa["approvals"].values())}</td></tr>'
+              f'<tr><td>Approval cards the therapist tapped</td><td class="n">{sum(v for v in wa["approvals"].values())}</td></tr>'
               f'<tr><td>Freed slots refilled from the waitlist</td><td class="n">{len(rec)} (MXN {rec_mxn:,})</td></tr>'
               f'<tr><td>Session ratings collected · average</td><td class="n">{wa["feedback_ratings"]} · {wa["feedback_avg"]}/5</td></tr>'
               f'<tr><td>Red flags escalated · attacks blocked</td><td class="n">{ap["red_flags_escalated"]} · {ap["attacks_blocked"]}</td></tr>'
@@ -269,12 +269,12 @@ def main():
     vis = UT.get("repo_visibility", "public")
     if UT.get("quote"):
         # the recorded session with the therapist (the demo video is this session, edited)
-        ut_rows = [("Her three biggest admin pains", UT.get("pains")),
+        ut_rows = [("The tester's three biggest admin pains", UT.get("pains")),
                    ("A booking over WhatsApp, by hand", UT.get("booking_by_hand")),
-                   ("Time those three tasks take her today", UT.get("admin_time")),
-                   ("What she ran in PhysioTeam", UT.get("ran")),
+                   ("Time those three tasks take today", UT.get("admin_time")),
+                   ("What the tester ran in PhysioTeam", UT.get("ran")),
                    ("Not measured in this session", UT.get("not_measured"))]
-        user_test = ('<div class="ex"><div class="et"><span class="n">Exhibit 18a</span>'
+        user_test = ('<div class="ex"><div class="et"><span class="n">Exhibit 18</span>'
                      f'User test: {html.escape(UT.get("session", ""))}</div>'
                      '<table><tr><th>Measure</th><th>Result</th></tr>' +
                      "".join(f"<tr><td>{a}</td><td><b>{html.escape(str(b))}</b></td></tr>" for a, b in ut_rows if b) +
@@ -283,15 +283,15 @@ def main():
                      ' - the therapist who tested PhysioTeam</div></div>')
         one_line = f'A practicing therapist ran it on a recorded call (the demo video): "{html.escape(UT["quote_short"])}"' 
         slide_imp = (f'<div class="take"><b>"{html.escape(UT["quote"])}"</b><br>- the physical therapist who tested it</div>'
-                     f'<ul style="font-size:.6em"><li>Her estimate today: <b>~2 h a day</b> on booking, reports and finances '
+                     f'<ul style="font-size:.6em"><li>The tester&#39;s estimate today: <b>~2 h a day</b> on booking, reports and finances '
                      f'= <b>10 h a week ≈ 40 h a month</b>; our measured-volume model frees {saved:.0f} h a week</li>'
                      f'<li>Booking by hand: {html.escape(UT.get("booking_by_hand", ""))}; with PhysioTeam: one tap on an approval card</li>'
                      f'<li>Refilled slots: MXN {rec_mxn:,} in the measured week</li></ul>')
     else:
         user_test = ('<div class="pending"><b>User test (to be completed with the therapist):</b> 40-minute session, screen shared and recorded. '
-                     'Tasks: (A) three patient replies by hand vs with the team, timed; (B) review of a drafted evaluation vs her usual time; '
-                     '(C) would she send the doctor report as drafted; (D) her weekly results. Closing: hours saved, willingness to pay, one quote. '
-                     'Protocol and data sheet: <code>report/user_test_guide.md</code>. Results replace the stated assumptions in Exhibit 18.</div>')
+                     'Tasks: (A) three patient replies by hand vs with the team, timed; (B) review of a drafted evaluation vs the usual time; '
+                     '(C) would the therapist send the doctor report as drafted; (D) the weekly results. Closing: hours saved, willingness to pay, one quote. '
+                     'Protocol and data sheet: <code>report/user_test_guide.md</code>. Results replace the stated assumptions in Exhibit 20.</div>')
         one_line = "A practicing therapist is testing it (results in section 6)."
         slide_imp = (f'<div class="pending">User test with a practicing therapist: results go here (quote, timings, ratings).</div>'
                      f'<ul style="font-size:.6em"><li>Refilled slots: MXN {rec_mxn:,} in the measured week</li>'

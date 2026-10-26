@@ -1561,7 +1561,7 @@
        "thread": "ops",
        "role": "system",
        "author": "Operations Partner",
-       "text": "Sent **1 reminders** for Sat Oct 31 (automatic, no AI cost)."
+       "text": "Sent **1 reminder** for Sat Oct 31 (automatic, no AI cost)."
       },
       {
        "thread": "wa:p_ana",

@@ -442,7 +442,7 @@ def send_reminders(s: Session, for_day: str) -> int:
                 who = c["patients"][agents.whatsapp_contact(c, p["id"])]
                 s.add_message(f"wa:{who['id']}", "patient", who["name"], "Confirmed, thanks!")
     if n:
-        s.add_message("ops", "system", "Operations Partner", f"Sent **{n} reminders** for {store.nice(for_day + 'T09:00')[:10]} (automatic, no AI cost).", agent="ops_partner")
+        s.add_message("ops", "system", "Operations Partner", f"Sent **{n} reminder{'s' if n != 1 else ''}** for {store.nice(for_day + 'T09:00')[:10]} (automatic, no AI cost).", agent="ops_partner")
     return n
 
 

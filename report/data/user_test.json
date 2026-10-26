@@ -1,6 +1,6 @@
 {
   "repo_visibility": "public",
-  "session": "a practicing physical therapist with a solo clinic in Mexico used PhysioTeam over a recorded video call (26 minutes, screen shared from her computer; the 5-minute demo video is cut from it)",
+  "session": "a practicing physical therapist with a solo clinic in Mexico used PhysioTeam over a recorded video call (26 minutes, screen shared from the tester's computer; the 5-minute demo video is cut from it)",
   "pains": "Booking over WhatsApp · diagnosis and follow-up reports for referring doctors · finances (who paid, who owes)",
   "booking_by_hand": "about 2 minutes per patient, while treating another patient",
   "admin_time": "about 2 hours a day = 10 hours a week ≈ 40 hours a month (a full working day each week)",
@@ -10,5 +10,5 @@
   "quote": "This will be really useful for my daily practice and I will be more efficient … to focus on what's important. So my patients will be happier.",
   "quote_short": "This will be really useful for my daily practice… So my patients will be happier.",
   "minutes": {"message": 2},
-  "minutes_basis": "stated assumptions, except her own ~2 minutes per booking message"
+  "minutes_basis": "stated assumptions, except the tester's own ~2 minutes per booking message"
 }

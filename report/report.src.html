@@ -80,7 +80,7 @@
 <div class="cover">
   <div class="kick">MGT 409 · AI Foundations for Managers · Final project</div>
   <h1>PhysioTeam</h1>
-  <div class="sub">A six-agent AI team that runs the back office of a solo physical therapy clinic on WhatsApp, so the therapist can spend her time with patients, not paperwork.</div>
+  <div class="sub">A six-agent AI team that runs the back office of a solo physical therapy clinic on WhatsApp, so the physical therapist can spend time with patients, not paperwork.</div>
 </div>
 <div class="meta">
   <b>Author</b><span>Jose Tronco · jesus.troncovalencia@yale.edu</span>
@@ -88,23 +88,23 @@
   <b>Run it (3 min)</b><span><code>pip install -r requirements.txt</code> → put <code>PORTKEY_API_KEY</code> in <code>.env</code> → <code>python run.py</code> → <code>http://localhost:8000</code>. Python only; the React build is committed. Full steps: Appendix A.</span>
   <b>Live app</b><span>Not hosted permanently (the course key would be public). A Render blueprint (<code>render.yaml</code>) deploys it in one step.</span>
   <b>What it does</b><span>Patients write on WhatsApp; six agents book, apply the clinic's policies, chase payments, draft every clinical form and doctor report, and report results. The therapist only approves.</span>
-  <b>Demo video</b><span>Submitted with this report (5 minutes), recorded on the tester's own computer: introductions, the physical therapist who tested PhysioTeam on her three pain points and her ~2 hours a day, Demo 1 (booking) run by her, and her verdict. Demos 2 and 3 are traced step by step in Exhibits 6-7.</span>
+  <b>Demo video</b><span>Submitted with this report (5 minutes), recorded on the tester's own computer: introductions, the physical therapist who tested PhysioTeam on the three pain points and the ~2 hours a day they take, Demo 1 (booking) run by the tester, and the tester's verdict. Demos 2 and 3 are traced step by step in Exhibits 6-7.</span>
 </div>
 
 <div class="exec">
 <h3>Executive summary</h3>
 <ol>
-  <li><b>A solo physical therapist is also her own receptionist, biller and secretary.</b> In a practice like the one we studied (about 25 patients, 3 sessions a week each), that is <b>about 2 hours a day</b> of booking, reports and finances by her own estimate (10 hours a week, ~40 a month), and ⟦X_BASE_HOURS⟧ hours a week by our model, mostly after hours.</li>
+  <li><b>A solo physical therapist is also the clinic's receptionist, biller and secretary.</b> In a practice like the one we studied (about 25 patients, 3 sessions a week each), that is <b>about 2 hours a day</b> of booking, reports and finances by the tester's own estimate (10 hours a week, ~40 a month), and ⟦X_BASE_HOURS⟧ hours a week by our model, mostly after hours.</li>
   <li><b>PhysioTeam covers the whole back office, not one task.</b> Six PydanticAI agents with 58 tools handle booking, the 24-hour policy, the waitlist, payments, invoices, evaluations, SOAP notes, treatment plans, doctor reports and weekly results, built on the clinic's own forms and rules. Competitors cover one or two of these.</li>
   <li><b>The therapist stays in charge, in code.</b> Every booking, charge, document and doctor message is an approval card executed by code; safety rules run before any model sees a message. All 8 attack and edge-case tests pass; ⟦K_HANDLED⟧% of a week's patient messages needed no interruption.</li>
   <li><b>It is accurate enough to trust as a first draft.</b> On 30 real-format therapist notes, the Clinical Scribe filled ⟦Q_EVAL_COMPLETE⟧% of the evaluation form and ⟦Q_SOAP_COMPLETE⟧% of SOAP notes, and ⟦Q_GROUNDED⟧% of the numbers it wrote appear in the notes (the rest are flagged for review), in ⟦Q_EVAL_SECONDS⟧ s per evaluation.</li>
   <li><b>It costs almost nothing to run.</b> A full measured clinic week costs <b>⟦K_WEEK_USD⟧</b> in AI (⟦K_CACHED⟧% of input from cache), about <b>⟦K_MONTH_USD⟧ per clinic per month</b>, and ⟦K_10K_MONTH⟧ a month for 10,000 clinics.</li>
-  <li><b>The prize is time and filled agenda slots.</b> Our model frees about <b>⟦X_SAVED_HOURS⟧ hours a week</b>, in line with her 2 hours a day (~40 hours a month); refilling freed slots from the waitlist recovered MXN ⟦X_RECOVERED_MXN⟧ in the simulated week. ⟦USER_TEST_ONE_LINE⟧</li>
+  <li><b>The prize is time and filled agenda slots.</b> Our model frees about <b>⟦X_SAVED_HOURS⟧ hours a week</b>, in line with the tester's 2 hours a day (~40 hours a month); refilling freed slots from the waitlist recovered MXN ⟦X_RECOVERED_MXN⟧ in the simulated week. ⟦USER_TEST_ONE_LINE⟧</li>
 </ol>
 </div>
 <div class="kpis">
   <div class="kpi"><b>⟦K_WEEK_USD⟧</b><span>AI cost of a full clinic week (⟦K_WEEK_PATIENTS⟧ patients, ⟦K_MESSAGES⟧ WhatsApp messages)</span></div>
-  <div class="kpi"><b>2 h / day</b><span>of the therapist's time back: 10 h a week, ~40 h a month (her estimate; model ⟦X_SAVED_HOURS⟧ h/week, section 6)</span></div>
+  <div class="kpi"><b>2 h / day</b><span>of the therapist's time back: 10 h a week, ~40 h a month (the tester's estimate; model ⟦X_SAVED_HOURS⟧ h/week, section 6)</span></div>
   <div class="kpi"><b>⟦Q_GROUNDED⟧%</b><span>of numbers in drafted forms found in the therapist's notes</span></div>
   <div class="kpi"><b>8 / 8</b><span>safety tests passed (injection, hidden PDF text, red flag, privacy…)</span></div>
   <div class="kpi"><b>45</b><span>capabilities, each shown in 5 one-click stories</span></div>
@@ -115,20 +115,20 @@
 <section class="pb">
 <div class="tracker"><span>Summary</span><span class="on">Motivation</span><span>What is new</span><span>Agents</span><span>Tokenomics</span><span>Safety</span><span>Impact</span><span>Limits</span><span>Appendix</span></div>
 <h2><span class="num">1 · </span>Solo physical therapists in Mexico lose a working day a week to WhatsApp and paperwork, and empty slots to late cancellations</h2>
-<p><b>Who has the problem.</b> Most physical therapists in Mexico practice alone or in pairs. The therapist who tested PhysioTeam runs that kind of clinic: one treatment room, about 25 active patients, three sessions a week each. Everything runs through her personal WhatsApp, the channel Mexico already uses with its health providers: about 77-80 million users, roughly 60% of the population.</p>
-<p><b>How it is handled today.</b> Between patients and at night she answers by hand: prices and therapy differences, the address, "can I come Thursday?", the reminder and its "C to confirm", cancellations two hours before a session, "how much do I owe?", receipts for insurance, invoices through an accountant, a gym video with "can I do this?", a daughter booking both parents. After sessions come the forms: a seven-section paper evaluation, a SOAP note per session, treatment plans, and progress reports when a referring doctor asks. We read three real (anonymised) patient chats and her blank paper templates to build this list; none of that data is in the app or the repo.</p>
+<p><b>Who has the problem.</b> Most physical therapists in Mexico practice alone or in pairs. The therapist who tested PhysioTeam runs that kind of clinic: one treatment room, about 25 active patients, three sessions a week each. Everything runs through the therapist's personal WhatsApp, the channel Mexico already uses with its health providers: about 77-80 million users, roughly 60% of the population.</p>
+<p><b>How it is handled today.</b> Between patients and at night the therapist answers by hand: prices and therapy differences, the address, "can I come Thursday?", the reminder and its "C to confirm", cancellations two hours before a session, "how much do I owe?", receipts for insurance, invoices through an accountant, a gym video with "can I do this?", a daughter booking both parents. After sessions come the forms: a seven-section paper evaluation, a SOAP note per session, treatment plans, and progress reports when a referring doctor asks. We read three real (anonymised) patient chats and the clinic's blank paper templates to build this list; none of that data is in the app or the repo.</p>
 <div class="ex">
   <div class="et"><span class="n">Exhibit 1</span>Where a solo therapist's admin week goes: about ⟦X_BASE_HOURS⟧ hours, most of it outside clinic hours</div>
   ⟦X_BASE_CHART⟧
-  <div class="src"><b>Note:</b> volumes measured in PhysioTeam's simulated clinic week (⟦K_WEEK_PATIENTS⟧ patients, ⟦X_INBOUND⟧ inbound WhatsApp messages, ⟦X_SESSIONS⟧ sessions); minutes per task as in Exhibit 18. The therapist who tested it puts the same work at about 2 hours a day, 10 hours a week (section 6). <b>Source:</b> PhysioTeam simulation, Oct 2026; team analysis.</div>
+  <div class="src"><b>Note:</b> volumes measured in PhysioTeam's simulated clinic week (⟦K_WEEK_PATIENTS⟧ patients, ⟦X_INBOUND⟧ inbound WhatsApp messages, ⟦X_SESSIONS⟧ sessions); minutes per task as in Exhibit 20. The therapist who tested it puts the same work at about 2 hours a day, 10 hours a week (section 6). <b>Source:</b> PhysioTeam simulation, Oct 2026; team analysis.</div>
 </div>
 <p><b>What it costs.</b></p>
 <ul>
-  <li><b>Time:</b> about 2 hours a day by her estimate, 10 hours a week (⟦X_BASE_HOURS⟧ by our model): the equivalent of a full clinic day, unpaid.</li>
+  <li><b>Time:</b> about 2 hours a day by the tester's estimate, 10 hours a week (⟦X_BASE_HOURS⟧ by our model): the equivalent of a full clinic day, unpaid.</li>
   <li><b>Money:</b> each empty hour is MXN 400-600 lost. The 24-hour cancellation charge is awkward to apply by hand, so it is often waived, and a freed slot is rarely refilled because nobody has time to text the waitlist.</li>
   <li><b>Patients:</b> about 70% of physical therapy patients don't finish their plan of care (WebPT); a 2021 PLOS ONE cohort of 440,000 patients found 73% missed at least one visit. Reminders, quick answers and follow-up are what keep them coming.</li>
 </ul>
-<div class="take"><b>Why it matters.</b> A receptionist costs more than the hours it would free are worth to a one-room practice, so the admin falls on the therapist: either her evenings or her patients pay for it.</div>
+<div class="take"><b>Why it matters.</b> A receptionist costs more than the hours it would free are worth to a one-room practice, so the admin falls on the therapist: either the therapist's evenings or the patients pay for it.</div>
 </section>
 
 <!-- ============================================================ 3 · WHAT IS NEW -->
@@ -153,8 +153,8 @@
 <h3>What is genuinely new</h3>
 <ul>
   <li><b>One team for the whole loop.</b> A patient's first WhatsApp, the booking, the late cancellation and its fee, the waitlist refill, the evaluation, every SOAP note, the plan, the doctor's report and the week's results are handled by six cooperating agents that pass work to each other.</li>
-  <li><b>Built from a real clinic.</b> Her evaluation and SOAP forms (same sections, same order), her prices, her policy, her WhatsApp patterns. Output files follow her naming rule (<code>yymmdd_PatientName_Type</code>).</li>
-  <li><b>Control by construction.</b> Approval cards are executed by <code>approvals.py</code>, never by a model; routine clinical questions are batched for the next session instead of interrupting her.</li>
+  <li><b>Built from a real clinic.</b> The clinic's evaluation and SOAP forms (same sections, same order), prices, policy and WhatsApp patterns. Output files follow the clinic's naming rule (<code>yymmdd_PatientName_Type</code>).</li>
+  <li><b>Control by construction.</b> Approval cards are executed by <code>approvals.py</code>, never by a model; routine clinical questions are batched for the next session instead of interrupting the therapist.</li>
 </ul>
 <div class="take"><b>Honest comparison.</b> Doctoralia has a patient marketplace and Jane a certified EMR; PhysioTeam has neither, and it is not yet connected to a real WhatsApp number (section 7). What it shows is that one small agent team can do the work those tools leave to the therapist, for cents a month.</div>
 </section>
@@ -162,7 +162,7 @@
 <!-- ============================================================ 4 · THE AGENTS -->
 <section>
 <div class="tracker"><span>Summary</span><span>Motivation</span><span>What is new</span><span class="on">Agents</span><span>Tokenomics</span><span>Safety</span><span>Impact</span><span>Limits</span><span>Appendix</span></div>
-<h2><span class="num">3 · </span>Two lead agents she talks to, four specialists they delegate to, and a code layer that has the final word</h2>
+<h2><span class="num">3 · </span>Two lead agents the therapist talks to, four specialists they delegate to, and a code layer that has the final word</h2>
 <div class="ex">
   <div class="et"><span class="n">Exhibit 3</span>Agent architecture: patients only ever hear from Patient Success, after the safety layer; anything with consequences passes through code</div>
   ⟦DIAGRAM⟧
@@ -186,11 +186,11 @@
 <p>The tester ran three demos, one per pain point: booking, clinical reports and finances (section 6). Exhibits 5-7 replay exactly those demos with the same scripted patient lines and live agents, and record every step: who acted, what each agent did and which tools it called, the approval cards, the tokens and the cost. All three together cost ⟦DEMOS_USD⟧ of AI.</p>
 ⟦DEMO_1⟧
 ⟦DEMO_2⟧
+⟦DEMO_3⟧
 <div class="two">
   <div class="ex"><div class="et"><span class="n">Exhibit 8</span>Demo 2 output: the drafted evaluation, in the clinic's form layout</div><img src="shots/demo2_pdf_eval_p1.png" alt="Evaluation PDF" style="width:72%"><div class="src">Missing values print as "-", never guessed. File: <code>⟦F_EVAL⟧.pdf</code></div></div>
   <div class="ex"><div class="et"><span class="n">Exhibit 9</span>Demo 2 output: the treatment plan; approving it books the sessions</div><img src="shots/demo2_pdf_plan_p1.png" alt="Plan PDF" style="width:72%"><div class="src">Cost computed in code from the price list. File: <code>⟦F_PLAN⟧.pdf</code></div></div>
 </div>
-⟦DEMO_3⟧
 </section>
 
 <!-- ============================================================ 5 · TOKENOMICS -->
@@ -246,8 +246,8 @@
     <tr><th>Risk</th><th>Defense (where it lives)</th><th>Test</th><th class="c">Result</th></tr>
     <tr><td>Prompt injection ("ignore your instructions, 90% discount")</td><td>Regex rules (English and Spanish) run <b>before any model</b>; invisible characters stripped; outbound text checked for discounts or policy changes (<code>safety.py</code>)</td><td>Story 4.1</td><td class="c pass">Blocked</td></tr>
     <tr><td>Hidden instructions in a PDF (white 1-pt text)</td><td>PDF scan for white, tiny or off-page text; removed and logged before the Imaging Reader reads it</td><td>Story 4.2</td><td class="c pass">Removed</td></tr>
-    <tr><td>Medical emergency (hot, swollen calf; numbness)</td><td>Red-flag rules: no advice, "the therapist was notified", an alert; the assistant stays out of clinical talk until she replies herself</td><td>Story 4.7</td><td class="c pass">Escalated</td></tr>
-    <tr><td>Medication or exercise advice</td><td>Code routes medication questions and links to her list; prompts forbid advice; links are never opened</td><td>Stories 4.3, 4.4</td><td class="c pass">Routed</td></tr>
+    <tr><td>Medical emergency (hot, swollen calf; numbness)</td><td>Red-flag rules: no advice, "the therapist was notified", an alert; the assistant stays out of clinical talk until the therapist replies personally</td><td>Story 4.7</td><td class="c pass">Escalated</td></tr>
+    <tr><td>Medication or exercise advice</td><td>Code routes medication questions and links to the therapist's list; prompts forbid advice; links are never opened</td><td>Stories 4.3, 4.4</td><td class="c pass">Routed</td></tr>
     <tr><td>Privacy between patients</td><td>Patient Success sees only the contact's records and family (scoped in code)</td><td>Story 4.5</td><td class="c pass">Refused</td></tr>
     <tr><td>Invented clinical values</td><td>Structured outputs; unstated fields stay empty and are listed as missing; every number checked against the notes</td><td>30 notes (Ex. 15)</td><td class="c pass">⟦Q_GROUNDED⟧% grounded</td></tr>
     <tr><td>Agent acting on its own</td><td>Bookings, charges, documents and doctor messages are approval cards executed by <code>approvals.py</code></td><td>All 51 steps</td><td class="c pass">Enforced</td></tr>
@@ -263,7 +263,7 @@
 </div>
 <div class="two">
   <div class="ex"><div class="et"><span class="n">Exhibit 16</span>Prompt injection blocked before any model saw it</div><img src="shots/wa_tom.png" alt="Injection blocked" style="width:72%"></div>
-  <div class="ex"><div class="et"><span class="n">Exhibit 17</span>Red flag: no advice; the therapist answers in her own words</div><img src="shots/wa_hector.png" alt="Red flag" style="width:72%"></div>
+  <div class="ex"><div class="et"><span class="n">Exhibit 17</span>Red flag: no advice; the therapist answers personally</div><img src="shots/wa_hector.png" alt="Red flag" style="width:72%"></div>
 </div>
 </section>
 
@@ -271,26 +271,26 @@
 <section>
 <div class="tracker"><span>Summary</span><span>Motivation</span><span>What is new</span><span>Agents</span><span>Tokenomics</span><span>Safety</span><span class="on">Impact</span><span>Limits</span><span>Appendix</span></div>
 <h2><span class="num">6 · </span>PhysioTeam gives the therapist back about 2 hours a day (10 a week, ~40 a month) and refills freed slots, for less than the price of one session a year</h2>
-<h3>Tested by a practicing physical therapist (her session is the demo video)</h3>
+<h3>Tested by a practicing physical therapist (the session is the demo video)</h3>
 ⟦USER_TEST⟧
 <div class="ex">
-  <div class="et"><span class="n">Exhibit 18b</span>The tester's own screen during the recorded call: she approves Valentina's booking, with the agents' log on the right</div>
+  <div class="et"><span class="n">Exhibit 19</span>The tester's own screen during the recorded call: the tester approves Valentina's booking, with the agents' log on the right</div>
   <img src="shots/usertest_approval.png" alt="The therapist's screen during the user test" style="width:56%">
-  <div class="src"><b>Source:</b> frame from the recorded user-test call (screen shared from her own computer, reaching the app through a temporary private link; the link is closed). Camera thumbnails cropped out.</div>
+  <div class="src"><b>Source:</b> frame from the recorded user-test call (screen shared from the tester's own computer, reaching the app through a temporary private link; the link is closed). Camera thumbnails cropped out.</div>
 </div>
 <div class="ex">
-  <div class="et"><span class="n">Exhibit 18</span>Time model: about ⟦X_BASE_HOURS⟧ hours of weekly admin become about ⟦X_AFTER_HOURS⟧ hours of review and approvals</div>
+  <div class="et"><span class="n">Exhibit 20</span>Time model: about ⟦X_BASE_HOURS⟧ hours of weekly admin become about ⟦X_AFTER_HOURS⟧ hours of review and approvals</div>
   ⟦TIME_TABLE⟧
-  <div class="src"><b>Note:</b> weekly volumes measured in the simulated clinic (⟦K_WEEK_PATIENTS⟧ patients); minutes per task are ⟦X_TIME_BASIS⟧. With PhysioTeam she reads drafts and taps approvals; routine messages need no action. The model's ⟦X_SAVED_HOURS⟧ hours a week match her own estimate of 2 hours a day (Exhibit 18a); four weeks of that is about 40 hours a month. <b>Source:</b> PhysioTeam simulation; team analysis.</div>
+  <div class="src"><b>Note:</b> weekly volumes measured in the simulated clinic (⟦K_WEEK_PATIENTS⟧ patients); minutes per task are ⟦X_TIME_BASIS⟧. With PhysioTeam the therapist reads drafts and taps approvals; routine messages need no action. The model's ⟦X_SAVED_HOURS⟧ hours a week match the tester's own estimate of 2 hours a day (Exhibit 18); four weeks of that is about 40 hours a month. <b>Source:</b> PhysioTeam simulation; team analysis.</div>
 </div>
 <div class="ex">
-  <div class="et"><span class="n">Exhibit 19</span>What the measured week delivered</div>
+  <div class="et"><span class="n">Exhibit 21</span>What the measured week delivered</div>
   ⟦IMPACT_TABLE⟧
 </div>
 <ul>
   <li><b>Money:</b> refilled cancellations recovered MXN ⟦X_RECOVERED_MXN⟧ in one week (two slots offered, accepted and booked within a minute, one tap each). Over a month that is about MXN ⟦X_RECOVERED_MONTH⟧, against an AI cost of about ⟦K_MONTH_USD⟧ (under MXN 5).</li>
   <li><b>Time:</b> ⟦X_SAVED_HOURS⟧ hours a week could become about ⟦X_EXTRA_SESSIONS⟧ more sessions (MXN ⟦X_EXTRA_MXN⟧ a week at MXN 400) or simply evenings back.</li>
-  <li><b>Patients:</b> every session ends with a 1-5 rating and a "why" stored in the patient's feedback file (⟦X_FEEDBACK⟧ ratings in the week, average ⟦X_FEEDBACK_AVG⟧); low ratings reach her the same day. Reminders and fast answers are the levers against the ~70% plan drop-out the industry reports.</li>
+  <li><b>Patients:</b> every session ends with a 1-5 rating and a "why" stored in the patient's feedback file (⟦X_FEEDBACK⟧ ratings in the week, average ⟦X_FEEDBACK_AVG⟧); low ratings reach the therapist the same day. Reminders and fast answers are the levers against the ~70% plan drop-out the industry reports.</li>
 </ul>
 
 </section>
@@ -298,20 +298,20 @@
 <!-- ============================================================ 8 · LIMITS + NEXT -->
 <section>
 <div class="tracker"><span>Summary</span><span>Motivation</span><span>What is new</span><span>Agents</span><span>Tokenomics</span><span>Safety</span><span>Impact</span><span class="on">Limits</span><span>Appendix</span></div>
-<h2><span class="num">7 · </span>Three things stand between this prototype and her clinic: the WhatsApp number, real data rules, and a month of measured use</h2>
+<h2><span class="num">7 · </span>Three things stand between this prototype and a real clinic: the WhatsApp number, real data rules, and a month of measured use</h2>
 <div class="ex">
-  <div class="et"><span class="n">Exhibit 21</span>What does not work yet, and what we would build next</div>
+  <div class="et"><span class="n">Exhibit 22</span>What does not work yet, and what we would build next</div>
   <table>
     <tr><th>Limit today</th><th>Why it matters</th><th>Next step</th></tr>
-    <tr><td><b>Not on a real WhatsApp number.</b> The Cloud API channel is built and tested locally (webhook, signature check, retries, allowlist, Mexican number format); connecting needs a Meta business account.</td><td>Patients still write to the demo, not to her phone</td><td>Register the clinic number on the WhatsApp Cloud API; per-conversation fees then become the main running cost</td></tr>
-    <tr><td><b>Fictional data.</b> Patients, doctors and notes are written to her forms by the course model; small inconsistencies exist.</td><td>Real notes are messier</td><td>Pilot on her real (consented) notes for a month</td></tr>
+    <tr><td><b>Not on a real WhatsApp number.</b> The Cloud API channel is built and tested locally (webhook, signature check, retries, allowlist, Mexican number format); connecting needs a Meta business account.</td><td>Patients still write to the demo, not to the clinic's phone</td><td>Register the clinic number on the WhatsApp Cloud API; per-conversation fees then become the main running cost</td></tr>
+    <tr><td><b>Fictional data.</b> Patients, doctors and notes are written to the clinic's forms by the course model; small inconsistencies exist.</td><td>Real notes are messier</td><td>Pilot on the therapist's real (consented) notes for a month</td></tr>
     <tr><td><b>Text only.</b> Voice notes and WhatsApp photos are not read yet (uploads are).</td><td>Therapists dictate</td><td>Voice-note dictation into SOAP notes</td></tr>
     <tr><td><b>No calendar or accounting integration</b> (agenda and ledger live in the app; .ics export and an MCP server exist).</td><td>Double entry</td><td>Google Calendar and CFDI invoicing connectors</td></tr>
     <tr><td><b>Health-data rules.</b> Mexico's data-protection law needs a privacy notice, consent and a provider agreement for the model.</td><td>Required before real patients</td><td>Consent flow in the first WhatsApp message; data-processing agreement</td></tr>
-    <tr><td><b>Answers in English only</b> in this build (a project decision).</td><td>Her patients write Spanish</td><td>Re-enable the Spanish paths already in the code</td></tr>
+    <tr><td><b>Answers in English only</b> in this build (a project decision).</td><td>The clinic's patients write Spanish</td><td>Re-enable the Spanish paths already in the code</td></tr>
   </table>
 </div>
-<div class="take"><b>Next 90 days:</b> (1) connect her number and run a four-week pilot measuring hours saved, refilled slots and plan completion against the four weeks before; (2) add outcome questionnaires (LEFS, Oswestry) scored in code to the progress reports; (3) offer it to two more solo practices at a price point under MXN 500 a month.</div>
+<div class="take"><b>Next 90 days:</b> (1) connect the clinic's number and run a four-week pilot measuring hours saved, refilled slots and plan completion against the four weeks before; (2) add outcome questionnaires (LEFS, Oswestry) scored in code to the progress reports; (3) offer it to two more solo practices at a price point under MXN 500 a month.</div>
 </section>
 
 <!-- ============================================================ APPENDIX · REPRODUCIBILITY -->
@@ -348,7 +348,7 @@ python run.py                   # http://localhost:8000</pre>
 <h3>A3 · Regenerate the measurements</h3>
 <table>
   <tr><th>Command</th><th>Produces</th><th class="n">Cost · time</th></tr>
-  <tr><td><code>python -m tools.report_data report/data/report_data.json</code></td><td>Exhibits 10-12, 19 (51 story steps + autopilot week + traces)</td><td class="n">~$0.07 · 7 min</td></tr>
+  <tr><td><code>python -m tools.report_data report/data/report_data.json</code></td><td>Exhibits 10-12, 21 (51 story steps + autopilot week + traces)</td><td class="n">~$0.07 · 7 min</td></tr>
   <tr><td><code>python -m tools.eval_quality report/data/eval_quality.json</code></td><td>Exhibit 15 (30 notes)</td><td class="n">~$0.06 · 6 min</td></tr>
   <tr><td><code>python -m tests.stories_run</code></td><td>All 5 stories, transcript per step</td><td class="n">~$0.03 · 2 min</td></tr>
   <tr><td><code>python -m tests.waitlist</code> · <code>tests.weeks</code> · <code>tests.open_items</code> · <code>tests.whatsapp_local</code></td><td>Waitlist, 5-week agenda, safety and feedback, live WhatsApp webhook</td><td class="n">&lt;$0.02 each</td></tr>

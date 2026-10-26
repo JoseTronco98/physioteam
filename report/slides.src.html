@@ -78,16 +78,16 @@
 <!-- 2 · Executive summary -->
 <section>
   <div class="tracker"><span class="on">Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
-  <h2>A solo therapist gets about 2 hours a day back (10 a week, ~40 a month), under her control, for ⟦K_MONTH_USD⟧ a month in AI</h2>
+  <h2>A solo physical therapist gets about 2 hours a day back (10 a week, ~40 a month), keeps every decision, and pays ⟦K_MONTH_USD⟧ a month in AI</h2>
   <div class="kpis">
-    <div class="kpi"><b>2 h / day</b><span>back to the therapist: 10 h a week, ~40 h a month (her estimate; model ⟦X_SAVED_HOURS⟧ h/week)</span></div>
+    <div class="kpi"><b>2 h / day</b><span>back to the therapist: 10 h a week, ~40 h a month (the tester's estimate; model ⟦X_SAVED_HOURS⟧ h/week)</span></div>
     <div class="kpi"><b>⟦K_WEEK_USD⟧</b><span>AI cost of a full measured clinic week</span></div>
-    <div class="kpi"><b>⟦Q_GROUNDED⟧%</b><span>of numbers in drafted forms found in her notes (30 notes)</span></div>
+    <div class="kpi"><b>⟦Q_GROUNDED⟧%</b><span>of numbers in drafted forms found in the therapist's notes (30 notes)</span></div>
     <div class="kpi"><b>8 / 8</b><span>safety tests passed</span></div>
   </div>
   <ul style="font-size:.98em;margin-top:.7em">
-    <li><b>Problem:</b> a one-room practice is also its own receptionist, biller and secretary: ~2 h a day of WhatsApp, forms and payments (her estimate), mostly after hours</li>
-    <li><b>Solution:</b> six agents and 58 tools run booking, policy, waitlist, payments, every clinical form and doctor report, on her templates</li>
+    <li><b>Problem:</b> a one-room practice is also its own receptionist, biller and secretary: ~2 h a day of WhatsApp, forms and payments (the tester's estimate), mostly after hours</li>
+    <li><b>Solution:</b> six agents and 58 tools run booking, policy, waitlist, payments, every clinical form and doctor report, on the clinic's templates</li>
     <li><b>Control:</b> every booking, charge, document and doctor message is an approval executed in code; safety rules run before any model</li>
     <li><b>Evidence:</b> ⟦USER_TEST_ONE_LINE⟧</li>
   </ul>
@@ -101,15 +101,15 @@
   <div class="g64">
     <div>⟦X_BASE_CHART⟧</div>
     <ul>
-      <li>~25 patients × 3 sessions a week, all coordinated on her personal WhatsApp</li>
+      <li>~25 patients × 3 sessions a week, all coordinated on the therapist's personal WhatsApp</li>
       <li>Prices, "can I come Thursday?", reminders, cancellations, "how much do I owe?", invoices</li>
       <li>Then a 7-section evaluation, a SOAP note per session, plans, doctor reports</li>
       <li>~70% of PT patients don't finish their plan (WebPT); every empty hour is MXN 400-600</li>
       <li>77-80 M WhatsApp users in Mexico: the channel patients already use</li>
     </ul>
   </div>
-  <div class="take" style="margin-top:.8em"><b>The therapist who tested it:</b> her three pains are booking over WhatsApp ("maybe two minutes per patient"), diagnosis and follow-up reports for referring doctors, and finances (who has paid, who owes her): <b>about 2 hours a day, 10 hours a week</b>.</div>
-  <div class="src">Note: volumes measured in the simulated clinic week; minutes per task as in report Exhibit 18; her own estimate is ~2 h a day. Source: PhysioTeam simulation; user test; WebPT; dplnews.com.</div><div class="pg">3</div>
+  <div class="take" style="margin-top:.8em"><b>The physical therapist who tested it:</b> the three pains are booking over WhatsApp ("maybe two minutes per patient"), diagnosis and follow-up reports for referring doctors, and finances (who has paid, who owes the clinic): <b>about 2 hours a day, 10 hours a week</b>.</div>
+  <div class="src">Note: volumes measured in the simulated clinic week; minutes per task as in report Exhibit 20; the tester's own estimate is ~2 h a day. Source: PhysioTeam simulation; user test; WebPT; dplnews.com.</div><div class="pg">3</div>
 </section>
 
 <!-- 4 · What's new -->
@@ -133,7 +133,7 @@
 <!-- 5 · Agents -->
 <section>
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span class="on">Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
-  <h2>Two leads she talks to, four specialists they delegate to, and a code layer with the last word</h2>
+  <h2>Two leads the therapist talks to, four specialists they delegate to, and a code layer with the last word</h2>
   <div class="g64">
     <div>⟦DIAGRAM⟧</div>
     <div><img class="shot" src="shots/trace1_combo.png" alt="Traced run" style="width:auto;max-width:100%;max-height:400px"><div class="cap">One traced run, step by step: Valentina asks for a session → Patient Success reads her profile, finds a slot, holds the booking → approval card for the therapist (log, newest first)</div></div>
@@ -144,7 +144,7 @@
 <!-- 6 · Demo -->
 <section>
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span class="on">Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
-  <h2>The three demos the therapist ran, traced end to end: every message answered, every decision hers, ⟦DEMOS_USD⟧ of AI</h2>
+  <h2>The three demos the therapist ran, traced end to end: every message answered, every decision the therapist's, ⟦DEMOS_USD⟧ of AI</h2>
   ⟦SLIDE_DEMOS⟧
   <div class="src">P = patient, T = therapist, C = clock. Replay of the user-test demos with tools/demo_runs.py (⟦DEMOS_MEASURED⟧); full step tables in report Exhibits 5-7.</div><div class="pg">6</div>
 </section>
@@ -157,7 +157,7 @@
     <div>
       <p style="font-weight:700;color:#03522D;font-size:.6em;margin:0 0 4px">Clinical Scribe on 30 notes in the clinic's format</p>
       ⟦QUALITY_TABLE_SHORT⟧
-      <p style="font-size:.5em;color:#5F6368">Grounded = numbers in the draft that also appear in the notes; the rest are flagged for her review.</p>
+      <p style="font-size:.5em;color:#5F6368">Grounded = numbers in the draft that also appear in the notes; the rest are flagged for the therapist's review.</p>
     </div>
     <div>
       <p style="font-weight:700;color:#03522D;font-size:.6em;margin:0 0 4px">Safety tests</p>
@@ -166,7 +166,7 @@
         <tr><td>Prompt injection (90% discount)</td><td class="c">Blocked in code</td></tr>
         <tr><td>Hidden white text in a referral PDF</td><td class="c">Removed, logged</td></tr>
         <tr><td>Red flag (hot, swollen calf)</td><td class="c">Escalated, no advice</td></tr>
-        <tr><td>Medication question · Instagram link</td><td class="c">Routed to her</td></tr>
+        <tr><td>Medication question · Instagram link</td><td class="c">Routed to the therapist</td></tr>
         <tr><td>Stranger asks about other patients</td><td class="c">Refused</td></tr>
         <tr><td>Agent tries to act alone</td><td class="c">Approval in code</td></tr>
         <tr><td>Loops · overspending</td><td class="c">Capped</td></tr>
@@ -175,7 +175,7 @@
   </div>
   <div class="grid2" style="margin-top:14px">
     <div><img class="shot" src="shots/wa_tom.png" alt="Prompt injection blocked" style="width:auto;max-width:100%;max-height:205px"><div class="cap">Prompt injection blocked in code before any model saw it</div></div>
-    <div><img class="shot" src="shots/wa_hector.png" alt="Red flag escalated" style="width:auto;max-width:100%;max-height:205px"><div class="cap">Red flag: no advice; the therapist is alerted and answers herself</div></div>
+    <div><img class="shot" src="shots/wa_hector.png" alt="Red flag escalated" style="width:auto;max-width:100%;max-height:205px"><div class="cap">Red flag: no advice; the therapist is alerted and answers personally</div></div>
   </div>
   <div class="src">Source: tools/eval_quality.py (⟦Q_MEASURED⟧); tests/stories_run.py.</div><div class="pg">7</div>
 </section>
@@ -195,13 +195,13 @@
 <!-- 9 · Impact -->
 <section>
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span class="on">Impact</span><span>Next</span></div>
-  <h2>She gets back about 2 hours a day (~40 a month) and refilled slots, for less than one session's price a year</h2>
+  <h2>The physical therapist gets back about 2 hours a day (~40 a month) and refilled slots, for less than one session's price a year</h2>
   <div class="grid2">
-    <div><img class="shot" src="shots/usertest_approval.png" alt="User test"><div class="cap">The user test: a practicing physical therapist runs PhysioTeam on her own computer (recorded call; the demo video)</div></div>
+    <div><img class="shot" src="shots/usertest_approval.png" alt="User test"><div class="cap">The user test: a practicing physical therapist runs PhysioTeam on the clinic's own computer (recorded call; the demo video)</div></div>
     <div>⟦SLIDE_IMPACT⟧</div>
   </div>
   <div class="kpis" style="margin-top:.8em">
-    <div class="kpi"><b>2 h</b><span>a day back to patient care (her estimate)</span></div>
+    <div class="kpi"><b>2 h</b><span>a day back to patient care (the tester's estimate)</span></div>
     <div class="kpi"><b>10 h</b><span>a week: a full clinic day (model ⟦X_SAVED_HOURS⟧ h)</span></div>
     <div class="kpi"><b>~40 h</b><span>a month for one solo clinic owner</span></div>
     <div class="kpi"><b>⟦K_MONTH_USD⟧</b><span>AI cost per clinic per month</span></div>
@@ -212,11 +212,11 @@
 <!-- 10 · Next -->
 <section>
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span class="on">Next</span></div>
-  <h2>Next: connect her WhatsApp number and run a four-week pilot that measures hours, refilled slots and plan completion</h2>
+  <h2>Next: connect the clinic's WhatsApp number and run a four-week pilot that measures hours, refilled slots and plan completion</h2>
   <table>
     <tr><th>Limit today</th><th>Next step</th></tr>
     <tr><td>Not on a real WhatsApp number (Cloud API channel built and tested locally)</td><td>Register the clinic number; four-week pilot vs the four weeks before</td></tr>
-    <tr><td>Fictional data written to her forms</td><td>Run on her real, consented notes</td></tr>
+    <tr><td>Fictional data written to the clinic's forms</td><td>Run on the therapist's real, consented notes</td></tr>
     <tr><td>Text only; English replies in this build</td><td>Voice-note dictation; re-enable Spanish</td></tr>
     <tr><td>No calendar or invoicing integration</td><td>Google Calendar, CFDI invoicing</td></tr>
     <tr><td>Health-data rules</td><td>Privacy notice and consent in the first message; processing agreement</td></tr>
@@ -227,7 +227,7 @@
     <div class="kpi"><b>⟦K_STORIES_USD⟧</b><span>AI cost to play all 51 steps</span></div>
     <div class="kpi"><b>~3 min</b><span>to run it locally: Python only</span></div>
   </div>
-  <div class="take"><b>Try it:</b> <a href="https://github.com/JoseTronco98/physioteam" style="color:inherit;text-decoration:underline">https://github.com/JoseTronco98/physioteam</a> (⟦REPO_VISIBILITY⟧) · <code>pip install -r requirements.txt</code> · <code>python run.py</code> → Therapist → Stories. Every number here regenerates with <code>tools/report_data.py</code> and <code>tools/eval_quality.py</code> (report, Appendix A).</div>
+  <div class="take"><b>Try it:</b> <a href="https://github.com/JoseTronco98/physioteam" style="color:inherit;text-decoration:underline">https://github.com/JoseTronco98/physioteam</a> (⟦REPO_VISIBILITY⟧) · <code>pip install -r requirements.txt</code> · <code>python run.py</code> → Therapist → Stories. Every number here regenerates with <code>tools/report_data.py</code>, <code>tools/eval_quality.py</code> and <code>tools/demo_runs.py</code> (report, Appendix A).</div>
   <div class="src">Source: report section 7 and Appendix A.</div><div class="pg">10</div>
 </section>
 

@@ -15,11 +15,11 @@ META = {
                       "Patient Success handles every message; the therapist taps three decisions and asks for one thing; code does the rest."},
     "demo2": {"n": 6, "shot": "demo2_combo.png", "w": "80%",
               "lead": "Javier writes for the first time, answers the intake, comes for his first visit; the therapist sends "
-                      "her notes and the Health Advisor, with the Clinical Scribe, drafts the evaluation in the clinic's "
-                      "form and a treatment plan (Exhibits 8 and 9). She signs and approves; the sessions book themselves."},
+                      "the session notes and the Health Advisor, with the Clinical Scribe, drafts the evaluation in the clinic's "
+                      "form and a treatment plan (Exhibits 8 and 9). The therapist signs and approves; the sessions book themselves."},
     "demo3": {"n": 7, "shot": "demo3_combo.png", "w": "78%",
               "lead": "A normal day (late start, a blocked hour, a family booking, a payment) runs to closing; the therapist "
-                      "asks who owes money, the week runs to Saturday, and she asks how the "
+                      "asks who owes money, the week runs to Saturday, and the therapist asks how the "
                       "week went. Finance Ops and the Operations Partner answer from the ledger and the agenda."},
 }
 
@@ -47,7 +47,7 @@ def what(st):
     parts = []
     first_in = None if st["actor"] == "clinic" else next((m for m in ms if m["role"] in ("patient", "therapist")), None)
     if first_in:
-        who = "She" if first_in["role"] == "therapist" else first_in["author"].split()[0]
+        who = "Therapist" if first_in["role"] == "therapist" else first_in["author"].split()[0]
         parts.append(f'{who}: "{esc(short(first_in["text"], 75))}"')
     for a in st["decided"]:
         parts.append(f'Therapist taps <b>{esc(a["status"])}</b>: {esc(short(a["title"], 60))}')
