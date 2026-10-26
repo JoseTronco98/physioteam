@@ -9,6 +9,7 @@ import { TeamRoom } from "../components/teamroom";
 import { ApprovalsView } from "../components/approvals";
 import { AgendaWeek, PatientChats } from "../components/clinicviews";
 import { GuideSide, useGuide } from "../components/guide";
+import { StoriesPanel } from "../components/stories";
 import { cx, fmtDay, fmtTime, SERVICE_LABEL } from "../util";
 import { Folder } from "./Folder";
 import { Report } from "./Report";
@@ -33,6 +34,8 @@ const THREADS: { id: ThreadId; label: string; hint: string }[] = [
   { id: "health", label: "Health Advisor", hint: "1:1 with the Health Advisor: evaluations, plans, progress, doctors." },
 ];
 
+type DraftReq = { thread: ThreadId; text: string; n: number; wa?: string };
+
 export function MissionsPanel({ missions, onTry, title = "Missions" }: { missions: Mission[]; onTry: (m: Mission) => void; title?: string }) {
   const { missionsDone } = useStore();
   const groups = useMemo(() => {
@@ -54,7 +57,7 @@ export function MissionsPanel({ missions, onTry, title = "Missions" }: { mission
               <div key={m.id} className={cx("mission", isDone && "done")}>
                 <span className="chk">{isDone ? "✓" : ""}</span>
                 <span className="mt">{m.title}{m.hint && <div className="tiny dim">{m.hint}</div>}</span>
-                {m.try_prompt ? <button className="btn try" onClick={() => onTry(m)}>Try it</button> : null}
+                {m.try_prompt || m.setup ? <button className="btn try" onClick={() => onTry(m)}>Try it</button> : null}
               </div>
             );
           })}
@@ -87,7 +90,7 @@ function TodayList({ agenda, now }: { agenda: Appointment[]; now?: string }) {
 
 /** The real product: a Mac-style window with the clinic's own navigation. */
 export function TherapistProduct({ section, go, draftReq }: {
-  section: Section; go: (s: Section) => void; draftReq: { thread: ThreadId; text: string; n: number } | null;
+  section: Section; go: (s: Section) => void; draftReq: DraftReq | null;
 }) {
   const { loadThread, threads, approvals, state, run, docVersion, setFocusPatient, lastMessage } = useStore();
   const { on: guideOn } = useGuide();
@@ -119,8 +122,9 @@ export function TherapistProduct({ section, go, draftReq }: {
   useEffect(() => { if (section === "messages") setMsgUnread(0); }, [section]);
   useEffect(() => {
     if (!draftReq) return;
+    if (draftReq.wa) { setOpenThread(draftReq.wa); return; }
     setThread(draftReq.thread);
-    setDrafts((d) => ({ ...d, [draftReq.thread]: draftReq.text }));
+    if (draftReq.text) setDrafts((d) => ({ ...d, [draftReq.thread]: draftReq.text }));
   }, [draftReq]);
 
   const openFolder = (pid: string) => { setFocusPatient(pid); go("folders"); };
@@ -174,7 +178,8 @@ export function TherapistProduct({ section, go, draftReq }: {
                 })}
               </div>
               <div className="chat">
-                <MessageList thread={thread} me={["therapist", "user"]} />
+                {/* Team = one inbox: what both leads post (e.g. "You're with Javier now, send me your notes") shows here too. */}
+                <MessageList thread={thread} me={["therapist", "user"]} merge={thread === "team" ? ["ops", "health"] : undefined} />
                 <Composer thread={thread} draft={drafts[thread] ?? ""} setDraft={(v) => setDrafts((d) => ({ ...d, [thread]: v }))}
                   placeholder={thread === "team" ? "Message your team… e.g. What's my day?  (Enter to send, Shift+Enter for a new line)" : `Message the ${current.label}…`}
                   hint={current.hint} />
@@ -242,13 +247,33 @@ function RightGuide() {
 
 /** Therapist mode: guide missions · product window · guide behind-the-scenes. */
 export function Therapist({ section, go }: { section: Section; go: (s: Section) => void }) {
-  const { run } = useStore();
+  const { run, toast, setFocusPatient } = useStore();
   const { on: guideOn } = useGuide();
   const [missions, setMissions] = useState<Mission[]>([]);
-  const [draftReq, setDraftReq] = useState<{ thread: ThreadId; text: string; n: number } | null>(null);
+  const [draftReq, setDraftReq] = useState<DraftReq | null>(null);
+  const [play, setPlay] = useState<"stories" | "free">("stories");
   useEffect(() => { void run(api.missions("therapist")).then((m) => m && setMissions(m)); }, [run]);
+  // Deep links: #therapist/messages/wa:p_valentina opens a chat, #therapist/folders/p_hector a folder.
+  useEffect(() => {
+    const arg = decodeURIComponent(window.location.hash.split("/")[2] ?? "");
+    if (!arg) return;
+    if (section === "messages") setDraftReq((d) => ({ thread: "team", text: "", wa: arg, n: (d?.n ?? 0) + 1 }));
+    if (section === "folders") setFocusPatient(arg);
+    if (section === "chat" && ["team", "ops", "health"].includes(arg)) setDraftReq((d) => ({ thread: arg as ThreadId, text: "", n: (d?.n ?? 0) + 1 }));
+  }, []); // eslint-disable-line
 
-  const onTry = (m: Mission) => {
+  const onTry = async (m: Mission) => {
+    if (m.setup && !m.try_prompt) {
+      // The backend builds the scenario (patient message, file, clock jump); we just open the right place.
+      const r = await run(api.tryMission(m.id));
+      if (!r) return;
+      toast(r.note);
+      if (r.go === "chat") { setDraftReq((d) => ({ thread: (r.thread as ThreadId) ?? "health", text: "", n: (d?.n ?? 0) + 1 })); go("chat"); }
+      else if (r.go === "messages") { setDraftReq((d) => ({ thread: "team", text: "", wa: r.thread ?? undefined, n: (d?.n ?? 0) + 1 })); go("messages"); }
+      else if (r.go === "folders" && r.thread) { setFocusPatient(r.thread); go("folders"); }
+      else if (r.go) go(r.go as Section);
+      return;
+    }
     const p = m.try_prompt ?? "";
     const target: ThreadId = p.startsWith("@Health") ? "health" : p.startsWith("@Ops") ? "ops" : "team";
     const clean = target !== "team" ? p.replace(/^@(Health|Ops)\s*/, "") : p;
@@ -256,11 +281,28 @@ export function Therapist({ section, go }: { section: Section; go: (s: Section) 
     go("chat");
   };
 
+  const onGo = (where: string | null, th: string | null) => {
+    if (where === "chat") { setDraftReq((d) => ({ thread: (th as ThreadId) ?? "team", text: "", n: (d?.n ?? 0) + 1 })); go("chat"); }
+    else if (where === "messages") { setDraftReq((d) => ({ thread: "team", text: "", wa: th ?? undefined, n: (d?.n ?? 0) + 1 })); go("messages"); }
+    else if (where === "folders" && th) { setFocusPatient(th); go("folders"); }
+    else if (where) go(where as Section);
+  };
+
   if (!guideOn) return <div className="stage solo"><TherapistProduct section={section} go={go} draftReq={draftReq} /></div>;
   return (
     <div className="stage">
-      <GuideSide side="left" label="Missions" minWidth={1400} width={262}>
-        <MissionsPanel missions={missions} onTry={onTry} title="Things to try this week" />
+      <GuideSide side="left" label="Stories" minWidth={1400} width={330}>
+        <div className="seg gtoggle" style={{ width: "100%", marginBottom: 10 }}>
+          <button className={cx(play === "stories" && "on")} onClick={() => setPlay("stories")}>Stories</button>
+          <button className={cx(play === "free" && "on")} onClick={() => setPlay("free")}>Free play</button>
+        </div>
+        {play === "stories" ? <StoriesPanel onGo={onGo} /> : (
+          <>
+            <p className="gsub" style={{ marginTop: 0 }}>Let the week flow with the clock at the top: patients and doctors write in on their own,
+              and you answer as Lic. Ana. Or try any single capability below.</p>
+            <MissionsPanel missions={missions} onTry={onTry} title="Everything it can do" />
+          </>
+        )}
       </GuideSide>
       <TherapistProduct section={section} go={go} draftReq={draftReq} />
       <GuideSide side="right" label="Behind the scenes" minWidth={1560} width={316}>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PhysioTeam · MGT 409</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+<style>
+  :root { --g:#29BA74; --gd:#197A56; --gdd:#03522D; --gl:#DCF3E7; --gll:#F1FAF5; --ink:#212427; --muted:#5F6368; --line:#D9D9D9; --soft:#F2F2F2;
+          --r-main-font: Arial, "Helvetica Neue", Helvetica, sans-serif; --r-heading-font: Arial, Helvetica, sans-serif;
+          --r-main-color: #212427; --r-heading-color: #03522D; --r-link-color: #197A56; --r-main-font-size: 24px;
+          --r-heading-text-transform: none; --r-heading-letter-spacing: 0; --r-heading-font-weight: 700; }
+  .reveal .slides { text-align: left; }
+  .reveal .slides section { height: 100%; padding: 0 !important; }
+  .reveal h2 { font-size: 1.32em; line-height: 1.18; margin: 0 0 .45em; color: var(--gdd); }
+  .tracker { display: flex; gap: 4px; margin: 0 0 .5em; }
+  .tracker span { flex: 1; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: #9a9a9a; border-top: 4px solid var(--soft); padding-top: 3px; }
+  .tracker span.on { color: var(--gdd); border-top-color: var(--g); font-weight: 700; }
+  .src { position: absolute; bottom: 4px; left: 0; right: 120px; font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+  .pg { position: absolute; bottom: 4px; right: 90px; font-size: 11.5px; color: var(--muted); }
+  .reveal li + li { margin-top: .45em; }
+  .reveal ul { margin: 0 0 0 1em; font-size: .78em; } .reveal li { margin: .22em 0; line-height: 1.32; }
+  .reveal p { font-size: .8em; line-height: 1.35; margin: .3em 0; }
+  .reveal table { font-size: .52em; border-collapse: collapse; width: 100%; margin: 0; }
+  .reveal table th { background: var(--gdd); color: #fff; border: none; padding: 5px 7px; font-weight: 700; }
+  .reveal table td { border-bottom: 1px solid var(--line); padding: 4px 7px; }
+  .reveal table td.c, .reveal table th.c { text-align: center; } .reveal td.n, .reveal th.n { text-align: right; }
+  .reveal table tr.total td { font-weight: 700; background: var(--gll); border-top: 2px solid var(--gdd); }
+  .hb { color: var(--gd); font-size: 1.25em; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
+  .g64 { display: grid; grid-template-columns: 1.55fr 1fr; gap: 24px; align-items: start; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: .3em 0; }
+  .kpi { border-top: 4px solid var(--g); background: var(--soft); padding: 10px 12px; }
+  .kpi b { display: block; font-size: 1.45em; color: var(--gdd); line-height: 1.1; }
+  .kpi span { display: block; font-size: .5em; color: var(--muted); line-height: 1.3; }
+  .take { border-left: 6px solid var(--g); background: var(--gll); padding: 8px 14px; font-size: .64em; line-height: 1.35; margin-top: .5em; }
+  .take b { color: var(--gdd); }
+  .reveal img.shot { border: 1px solid var(--line); margin: 0; width: 100%; }
+  .cap { font-size: .48em; color: var(--muted); margin-top: 3px; }
+  .num { color: var(--g); }
+  .cover { background: linear-gradient(90deg, var(--gdd) 0 62%, var(--g) 62% 100%); color: #fff; height: 100%; position: relative; }
+  .cover .in { position: absolute; left: 60px; top: 150px; right: 520px; }
+  .cover h1 { color: #fff; font-size: 2.6em; margin: 0 0 .25em; }
+  .cover p { color: #E6F5EC; font-size: .92em; }
+  .cover .side { position: absolute; right: 50px; top: 170px; width: 400px; color: #fff; font-size: .62em; line-height: 1.55; }
+  .cover .side b { color: #fff; }
+  .pending { border: 2px dashed #B8860B; background: #FFF8E6; padding: 8px 12px; font-size: .6em; }
+  svg text { font-family: Arial, Helvetica, sans-serif; }
+</style>
+</head>
+<body>
+<div class="reveal"><div class="slides">
+
+<!-- 1 · Title -->
+<section data-background-color="#03522D">
+  <div class="cover">
+    <div class="in">
+      <p style="letter-spacing:.1em;font-size:.55em;text-transform:uppercase;color:#9FE0BE;font-weight:700">MGT 409 · Final project</p>
+      <h1>PhysioTeam</h1>
+      <p>A six-agent AI team that runs the back office of a solo physical therapy clinic on WhatsApp.</p>
+      <p style="font-size:.6em;margin-top:2.2em;color:#CDEBDB">Jose Tronco · October 2026</p>
+    </div>
+    <div class="side">
+      <b>Repo</b><br>github.com/JoseTronco98/physioteam<br><span style="opacity:.8">⟦REPO_VISIBILITY⟧</span><br><br>
+      <b>Run</b><br>pip install -r requirements.txt<br>python run.py → localhost:8000<br><br>
+      <b>Model</b><br>gpt-6-luna · PydanticAI · FastAPI · React
+    </div>
+  </div>
+</section>
+
+<!-- 2 · Executive summary -->
+<section>
+  <div class="tracker"><span class="on">Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
+  <h2>A solo therapist gets about ⟦X_SAVED_HOURS⟧ hours a week back, under her control, for ⟦K_MONTH_USD⟧ a month in AI</h2>
+  <div class="kpis">
+    <div class="kpi"><b>⟦X_SAVED_HOURS⟧ h</b><span>therapist time freed per week (model)</span></div>
+    <div class="kpi"><b>⟦K_WEEK_USD⟧</b><span>AI cost of a full measured clinic week</span></div>
+    <div class="kpi"><b>⟦Q_GROUNDED⟧%</b><span>of numbers in drafted forms found in her notes (30 notes)</span></div>
+    <div class="kpi"><b>8 / 8</b><span>safety tests passed</span></div>
+  </div>
+  <ul style="font-size:.98em;margin-top:.7em">
+    <li><b>Problem:</b> a one-room practice is also its own receptionist, biller and secretary: ~⟦X_BASE_HOURS⟧ h/week of WhatsApp and forms, mostly after hours</li>
+    <li><b>Solution:</b> six agents and 58 tools run booking, policy, waitlist, payments, every clinical form and doctor report, on her templates</li>
+    <li><b>Control:</b> every booking, charge, document and doctor message is an approval executed in code; safety rules run before any model</li>
+    <li><b>Evidence:</b> ⟦USER_TEST_ONE_LINE⟧</li>
+  </ul>
+  <div class="src">Source: PhysioTeam measurements (⟦D_MEASURED⟧), tools/report_data.py and tools/eval_quality.py.</div><div class="pg">2</div>
+</section>
+
+<!-- 3 · Problem -->
+<section>
+  <div class="tracker"><span>Summary</span><span class="on">Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
+  <h2>Solo physical therapists lose a working day a week to WhatsApp and paperwork, and empty slots to late cancellations</h2>
+  <div class="g64">
+    <div>⟦X_BASE_CHART⟧</div>
+    <ul>
+      <li>~25 patients × 3 sessions a week, all coordinated on her personal WhatsApp</li>
+      <li>Prices, "can I come Thursday?", reminders, cancellations, "how much do I owe?", invoices</li>
+      <li>Then a 7-section evaluation, a SOAP note per session, plans, doctor reports</li>
+      <li>~70% of PT patients don't finish their plan (WebPT); every empty hour is MXN 400-600</li>
+      <li>77-80 M WhatsApp users in Mexico: the channel patients already use</li>
+    </ul>
+  </div>
+  <div class="src">Note: volumes measured in the simulated clinic week; minutes per task are stated assumptions. Source: PhysioTeam simulation; WebPT; dplnews.com.</div><div class="pg">3</div>
+</section>
+
+<!-- 4 · What's new -->
+<section>
+  <div class="tracker"><span>Summary</span><span>Problem</span><span class="on">What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
+  <h2>Existing tools automate one task; PhysioTeam runs the whole back office in the channel patients already use</h2>
+  <table>
+    <tr><th>Capability</th><th class="c">Doctoralia NOA</th><th class="c">Jane AI Scribe</th><th class="c">WebPT</th><th class="c">WhatsApp bot</th><th class="c">ChatGPT</th><th class="c">PhysioTeam</th></tr>
+    <tr><td>Answers patients on WhatsApp, in context</td><td class="c hb">◔</td><td class="c hb">○</td><td class="c hb">○</td><td class="c hb">◑</td><td class="c hb">○</td><td class="c hb">●</td></tr>
+    <tr><td>Booking, waitlist, cancellation policy</td><td class="c hb">◕</td><td class="c hb">◑</td><td class="c hb">◑</td><td class="c hb">◔</td><td class="c hb">○</td><td class="c hb">●</td></tr>
+    <tr><td>Payments and invoice requests</td><td class="c hb">◔</td><td class="c hb">◑</td><td class="c hb">◑</td><td class="c hb">○</td><td class="c hb">○</td><td class="c hb">●</td></tr>
+    <tr><td>Clinical drafts in the clinic's own forms</td><td class="c hb">◑</td><td class="c hb">◕</td><td class="c hb">◑</td><td class="c hb">○</td><td class="c hb">◑</td><td class="c hb">●</td></tr>
+    <tr><td>Reports and replies to referring doctors</td><td class="c hb">○</td><td class="c hb">◔</td><td class="c hb">◔</td><td class="c hb">○</td><td class="c hb">◔</td><td class="c hb">●</td></tr>
+    <tr><td>Human approval enforced in code</td><td class="c hb">◑</td><td class="c hb">◑</td><td class="c hb">◑</td><td class="c hb">○</td><td class="c hb">○</td><td class="c hb">●</td></tr>
+    <tr><td>Weekly results incl. AI cost</td><td class="c hb">◔</td><td class="c hb">◑</td><td class="c hb">◑</td><td class="c hb">○</td><td class="c hb">○</td><td class="c hb">●</td></tr>
+  </table>
+  <div class="take"><b>Honest gap:</b> no patient marketplace (Doctoralia) or certified EMR (Jane), and not yet on a real WhatsApp number.</div>
+  <div class="src">● full · ◕ most · ◑ partial · ◔ minimal · ○ none. Team assessment from public product pages, Oct 2026.</div><div class="pg">4</div>
+</section>
+
+<!-- 5 · Agents -->
+<section>
+  <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span class="on">Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
+  <h2>Two leads she talks to, four specialists they delegate to, and a code layer with the last word</h2>
+  <div style="max-width:1000px;margin:0 auto">⟦DIAGRAM⟧</div>
+  <div class="src">PydanticAI agents on gpt-6-luna · 58 tools · one hand-off per request · 10 requests / 12 tool calls per run. Source: backend/agents.py, safety.py, approvals.py.</div><div class="pg">5</div>
+</section>
+
+<!-- 6 · Demo -->
+<section>
+  <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span class="on">Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
+  <h2>Five one-click stories show all 45 capabilities, from a patient's first message to the week's results</h2>
+  <div class="grid2">
+    <div><img class="shot" src="shots/wa_valentina.png" alt="WhatsApp view"><div class="cap">The hard-to-book patient: booking, late cancellation, fee argument, waitlist move</div></div>
+    <div><img class="shot" src="shots/folder_hector.png" alt="Patient folder"><div class="cap">A patient folder: evaluation, plan versions, one SOAP per session, reports, feedback</div></div>
+  </div>
+  <p style="font-size:.6em;margin-top:.6em"><b>Stories:</b> 1 the hard-to-book patient · 2 the referring doctor · 3 a new patient's month (incl. the review point) · 4 safety and edge cases · 5 running the clinic and the results</p>
+  <div class="src">Source: PhysioTeam therapist view (Therapist → Stories).</div><div class="pg">6</div>
+</section>
+
+<!-- 7 · Quality + safety -->
+<section>
+  <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span class="on">Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
+  <h2>Drafts are complete and grounded, and every safety defense lives in code and passes its test</h2>
+  <div class="grid2">
+    <div>
+      <p style="font-weight:700;color:#03522D;font-size:.6em;margin:0 0 4px">Clinical Scribe on 30 notes in the clinic's format</p>
+      ⟦QUALITY_TABLE_SHORT⟧
+      <p style="font-size:.5em;color:#5F6368">Grounded = numbers in the draft that also appear in the notes; the rest are flagged for her review.</p>
+    </div>
+    <div>
+      <p style="font-weight:700;color:#03522D;font-size:.6em;margin:0 0 4px">Safety tests</p>
+      <table>
+        <tr><th>Attack or edge case</th><th class="c">Result</th></tr>
+        <tr><td>Prompt injection (90% discount)</td><td class="c">Blocked in code</td></tr>
+        <tr><td>Hidden white text in a referral PDF</td><td class="c">Removed, logged</td></tr>
+        <tr><td>Red flag (hot, swollen calf)</td><td class="c">Escalated, no advice</td></tr>
+        <tr><td>Medication question · Instagram link</td><td class="c">Routed to her</td></tr>
+        <tr><td>Stranger asks about other patients</td><td class="c">Refused</td></tr>
+        <tr><td>Agent tries to act alone</td><td class="c">Approval in code</td></tr>
+        <tr><td>Loops · overspending</td><td class="c">Capped</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="src">Source: tools/eval_quality.py (⟦Q_MEASURED⟧); tests/stories_run.py.</div><div class="pg">7</div>
+</section>
+
+<!-- 8 · Cost -->
+<section>
+  <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span class="on">Cost</span><span>Impact</span><span>Next</span></div>
+  <h2>A whole clinic week costs ⟦K_WEEK_USD⟧; 10,000 clinics would cost ⟦K_10K_MONTH⟧ a month</h2>
+  <div class="grid2">
+    <div>⟦WEEK_TABLE_SHORT⟧</div>
+    <div>
+      ⟦SCALE_TABLE⟧
+      <ul style="font-size:.6em;margin-top:.6em">
+        <li>⟦K_CACHED⟧% of input tokens from cache (~59% saving, same output in the A/B)</li>
+        <li>⟦K_CODE_MSGS_SHORT⟧ of outgoing patient messages sent by code at zero tokens</li>
+        <li>Typical run: ⟦T1_USD⟧ (a booking) to ⟦T2_USD⟧ (evaluation + plan)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="src">Measured on every model call at course prices ($0.10 / $0.01 cached / $0.50 output per M tokens); simulator bots excluded. Source: tools/report_data.py, ⟦D_MEASURED⟧.</div><div class="pg">8</div>
+</section>
+
+<!-- 9 · Impact -->
+<section>
+  <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span class="on">Impact</span><span>Next</span></div>
+  <h2>She gets back about ⟦X_SAVED_HOURS⟧ hours a week and refilled slots, for less than one session's price a year</h2>
+  <div class="grid2">
+    <div>⟦TIME_CHART⟧</div>
+    <div>⟦SLIDE_IMPACT⟧</div>
+  </div>
+  <div class="src">Note: weekly volumes measured; minutes per task are ⟦X_TIME_BASIS⟧. Source: PhysioTeam simulation; user test.</div><div class="pg">9</div>
+</section>
+
+<!-- 10 · Next -->
+<section>
+  <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span class="on">Next</span></div>
+  <h2>Next: connect her WhatsApp number and run a four-week pilot that measures hours, refilled slots and plan completion</h2>
+  <table>
+    <tr><th>Limit today</th><th>Next step</th></tr>
+    <tr><td>Not on a real WhatsApp number (Cloud API channel built and tested locally)</td><td>Register the clinic number; four-week pilot vs the four weeks before</td></tr>
+    <tr><td>Fictional data written to her forms</td><td>Run on her real, consented notes</td></tr>
+    <tr><td>Text only; English replies in this build</td><td>Voice-note dictation; re-enable Spanish</td></tr>
+    <tr><td>No calendar or invoicing integration</td><td>Google Calendar, CFDI invoicing</td></tr>
+    <tr><td>Health-data rules</td><td>Privacy notice and consent in the first message; processing agreement</td></tr>
+  </table>
+  <div class="take"><b>Try it:</b> github.com/JoseTronco98/physioteam (⟦REPO_VISIBILITY⟧) · <code>pip install -r requirements.txt</code> · <code>python run.py</code> → Therapist → Stories. Every number here regenerates with <code>tools/report_data.py</code> and <code>tools/eval_quality.py</code> (report, Appendix A).</div>
+  <div class="src">Source: report section 7 and Appendix A.</div><div class="pg">10</div>
+</section>
+
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>Reveal.initialize({ hash: true, slideNumber: false, width: 1280, height: 720, margin: 0.05, transition: "none", center: false });</script>
+</body>
+</html>

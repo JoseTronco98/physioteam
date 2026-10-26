@@ -1,0 +1,212 @@
+[
+ {
+  "file": "session_2026-10-26_11h_lucia.txt",
+  "patient_id": "p_lucia",
+  "start": "2026-10-26T11:00",
+  "kind": "soap",
+  "title": "Lucia Mendez · session 5 · Mon Oct 26, 11:00"
+ },
+ {
+  "file": "session_2026-10-26_12h_daniel.txt",
+  "patient_id": "p_daniel",
+  "start": "2026-10-26T12:00",
+  "kind": "soap",
+  "title": "Daniel Ochoa · session 7 · Mon Oct 26, 12:00"
+ },
+ {
+  "file": "session_2026-10-26_13h_marisol.txt",
+  "patient_id": "p_marisol",
+  "start": "2026-10-26T13:00",
+  "kind": "soap",
+  "title": "Marisol Pena · session 3 · Mon Oct 26, 13:00"
+ },
+ {
+  "file": "first_visit_2026-10-26_15h_andres.txt",
+  "patient_id": "p_andres",
+  "start": "2026-10-26T15:00",
+  "kind": "evaluation",
+  "title": "Andres Valdez · first visit (evaluation) · Mon Oct 26, 15:00"
+ },
+ {
+  "file": "first_visit_2026-10-26_17h_gabriela.txt",
+  "patient_id": "p_gabriela",
+  "start": "2026-10-26T17:00",
+  "kind": "evaluation",
+  "title": "Gabriela Soto · first visit (evaluation) · Mon Oct 26, 17:00"
+ },
+ {
+  "file": "session_2026-10-26_18h_ana.txt",
+  "patient_id": "p_ana",
+  "start": "2026-10-26T18:00",
+  "kind": "soap",
+  "title": "Ana Paula Torres · session 4 · Mon Oct 26, 18:00"
+ },
+ {
+  "file": "session_2026-10-26_19h_ricardo.txt",
+  "patient_id": "p_ricardo",
+  "start": "2026-10-26T19:00",
+  "kind": "soap",
+  "title": "Ricardo Fuentes · session 10 · Mon Oct 26, 19:00"
+ },
+ {
+  "file": "session_2026-10-27_11h_jorge.txt",
+  "patient_id": "p_jorge",
+  "start": "2026-10-27T11:00",
+  "kind": "soap",
+  "title": "Jorge Salas · session 8 · Tue Oct 27, 11:00"
+ },
+ {
+  "file": "session_2026-10-27_12h_carmen.txt",
+  "patient_id": "p_carmen",
+  "start": "2026-10-27T12:00",
+  "kind": "soap",
+  "title": "Carmen Vidal · session 3 · Tue Oct 27, 12:00"
+ },
+ {
+  "file": "session_2026-10-27_13h_paola.txt",
+  "patient_id": "p_paola",
+  "start": "2026-10-27T13:00",
+  "kind": "soap",
+  "title": "Paola Ibarra · session 2 · Tue Oct 27, 13:00"
+ },
+ {
+  "file": "first_visit_2026-10-27_15h_roberto.txt",
+  "patient_id": "p_roberto",
+  "start": "2026-10-27T15:00",
+  "kind": "evaluation",
+  "title": "Roberto Aguilar · first visit (evaluation) · Tue Oct 27, 15:00"
+ },
+ {
+  "file": "session_2026-10-27_17h_hector.txt",
+  "patient_id": "p_hector",
+  "start": "2026-10-27T17:00",
+  "kind": "soap",
+  "title": "Hector Ruiz · session 6 · Tue Oct 27, 17:00"
+ },
+ {
+  "file": "first_visit_2026-10-27_18h_fernanda.txt",
+  "patient_id": "p_fernanda",
+  "start": "2026-10-27T18:00",
+  "kind": "evaluation",
+  "title": "Fernanda Leal · first visit (evaluation) · Tue Oct 27, 18:00"
+ },
+ {
+  "file": "session_2026-10-27_19h_diego.txt",
+  "patient_id": "p_diego",
+  "start": "2026-10-27T19:00",
+  "kind": "soap",
+  "title": "Diego Herrera · session 15 · Tue Oct 27, 19:00"
+ },
+ {
+  "file": "session_2026-10-28_11h_luis.txt",
+  "patient_id": "p_luis",
+  "start": "2026-10-28T11:00",
+  "kind": "soap",
+  "title": "Luis Mora · session 5 · Wed Oct 28, 11:00"
+ },
+ {
+  "file": "session_2026-10-28_12h_daniel.txt",
+  "patient_id": "p_daniel",
+  "start": "2026-10-28T12:00",
+  "kind": "soap",
+  "title": "Daniel Ochoa · session 8 · Wed Oct 28, 12:00"
+ },
+ {
+  "file": "first_visit_2026-10-28_14h_miguel.txt",
+  "patient_id": "p_miguel",
+  "start": "2026-10-28T14:00",
+  "kind": "evaluation",
+  "title": "Miguel Castro · first visit (evaluation) · Wed Oct 28, 14:00"
+ },
+ {
+  "file": "session_2026-10-28_16h_ernesto.txt",
+  "patient_id": "p_ernesto",
+  "start": "2026-10-28T16:00",
+  "kind": "soap",
+  "title": "Ernesto Gomez · session 7 · Wed Oct 28, 16:00"
+ },
+ {
+  "file": "session_2026-10-28_17h_marta.txt",
+  "patient_id": "p_marta",
+  "start": "2026-10-28T17:00",
+  "kind": "soap",
+  "title": "Marta Gomez · session 4 · Wed Oct 28, 17:00"
+ },
+ {
+  "file": "session_2026-10-28_19h_ricardo.txt",
+  "patient_id": "p_ricardo",
+  "start": "2026-10-28T19:00",
+  "kind": "soap",
+  "title": "Ricardo Fuentes · session 11 · Wed Oct 28, 19:00"
+ },
+ {
+  "file": "session_2026-10-29_11h_lucia.txt",
+  "patient_id": "p_lucia",
+  "start": "2026-10-29T11:00",
+  "kind": "soap",
+  "title": "Lucia Mendez · session 6 · Thu Oct 29, 11:00"
+ },
+ {
+  "file": "session_2026-10-29_12h_carmen.txt",
+  "patient_id": "p_carmen",
+  "start": "2026-10-29T12:00",
+  "kind": "soap",
+  "title": "Carmen Vidal · session 4 · Thu Oct 29, 12:00"
+ },
+ {
+  "file": "session_2026-10-29_13h_marisol.txt",
+  "patient_id": "p_marisol",
+  "start": "2026-10-29T13:00",
+  "kind": "soap",
+  "title": "Marisol Pena · session 4 · Thu Oct 29, 13:00"
+ },
+ {
+  "file": "first_visit_2026-10-29_14h_patricia.txt",
+  "patient_id": "p_patricia",
+  "start": "2026-10-29T14:00",
+  "kind": "evaluation",
+  "title": "Patricia Morales · first visit (evaluation) · Thu Oct 29, 14:00"
+ },
+ {
+  "file": "first_visit_2026-10-29_15h_javier.txt",
+  "patient_id": "p_javier",
+  "start": "2026-10-29T15:00",
+  "kind": "evaluation",
+  "title": "Javier Ortega · first visit (evaluation) · Thu Oct 29, 15:00"
+ },
+ {
+  "file": "session_2026-10-29_16h_elena.txt",
+  "patient_id": "p_elena",
+  "start": "2026-10-29T16:00",
+  "kind": "soap",
+  "title": "Elena Rios · session 6 · Thu Oct 29, 16:00"
+ },
+ {
+  "file": "first_visit_2026-10-29_17h_laura.txt",
+  "patient_id": "p_laura",
+  "start": "2026-10-29T17:00",
+  "kind": "evaluation",
+  "title": "Laura Benitez · first visit (evaluation) · Thu Oct 29, 17:00"
+ },
+ {
+  "file": "session_2026-10-29_18h_diego.txt",
+  "patient_id": "p_diego",
+  "start": "2026-10-29T18:00",
+  "kind": "soap",
+  "title": "Diego Herrera · session 16 · Thu Oct 29, 18:00"
+ },
+ {
+  "file": "first_visit_2026-10-30_14h_oscar.txt",
+  "patient_id": "p_oscar",
+  "start": "2026-10-30T14:00",
+  "kind": "evaluation",
+  "title": "Oscar Villa · first visit (evaluation) · Fri Oct 30, 14:00"
+ },
+ {
+  "file": "first_visit_2026-10-30_18h_daniela.txt",
+  "patient_id": "p_daniela",
+  "start": "2026-10-30T18:00",
+  "kind": "evaluation",
+  "title": "Daniela Paz · first visit (evaluation) · Fri Oct 30, 18:00"
+ }
+]

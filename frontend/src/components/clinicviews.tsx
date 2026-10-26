@@ -161,10 +161,19 @@ export function PatientChats({ initial, onOpened }: { initial?: string | null; o
 }
 
 /* ======================================================================================
-   Agenda: week grid Mon Oct 26 to Sat Oct 31, 09:00 to 20:00
+   Agenda: week grid Mon-Sat, 09:00 to 20:00 · this week and the next four
    ====================================================================================== */
 
-const DAYS = ["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31"];
+const WEEKS = 5;
+const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function weekDays(w: number): string[] {
+  return Array.from({ length: 6 }, (_, i) => iso(new Date(2026, 9, 26 + w * 7 + i)));
+}
+const weekLabel = (w: number) => {
+  const d = new Date(2026, 9, 26 + w * 7);
+  const m = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return w === 0 ? `This week · Mon ${m}` : w === 1 ? `Next week · Mon ${m}` : `In ${w} weeks · Mon ${m}`;
+};
 const H0 = 9, H1 = 20, ROW = 42;
 const mins = (s: string) => { const d = parseSim(s); return d.getHours() * 60 + d.getMinutes(); };
 const top = (s: string) => ((mins(s) - H0 * 60) / 60) * ROW;
@@ -179,16 +188,18 @@ export function AgendaWeek({ onOpenFolder, onMessage }: { onOpenFolder: (pid: st
   const [appts, setAppts] = useState<Appointment[]>([]);
   const [blocked, setBlocked] = useState<BlockedRange[]>([]);
   const [pick, setPick] = useState<Appointment | null>(null);
+  const [week, setWeek] = useState(0);
+  const DAYS = useMemo(() => weekDays(week), [week]);
   const timer = useRef<number | undefined>(undefined);
 
   const load = useMemo(() => async () => {
     const [a, b] = await Promise.all([
-      run(api.agenda("2026-10-26T00:00", "2026-11-01T00:00")),
+      run(api.agenda(`${DAYS[0]}T00:00`, `${DAYS[5]}T23:59`)),
       run(api.blocked()),
     ]);
     if (a) setAppts(a);
     if (b) setBlocked(b);
-  }, [run]);
+  }, [run, DAYS]);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     window.clearTimeout(timer.current);
@@ -216,7 +227,12 @@ export function AgendaWeek({ onOpenFolder, onMessage }: { onOpenFolder: (pid: st
   return (
     <div className="agenda">
       <div className="row small" style={{ gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-        <span className="muted">Week of Oct 26 · {counts.booked} booked · {counts.pending} pending · {counts.done} done · {counts.cancelled} cancelled</span>
+        <div className="seg" style={{ marginRight: 4 }}>
+          <button disabled={week === 0} onClick={() => { setWeek((w) => Math.max(0, w - 1)); setPick(null); }} aria-label="Previous week">‹</button>
+          <button disabled={week === WEEKS - 1} onClick={() => { setWeek((w) => Math.min(WEEKS - 1, w + 1)); setPick(null); }} aria-label="Next week">›</button>
+        </div>
+        <b>{weekLabel(week)}</b>
+        <span className="muted">{counts.booked} booked · {counts.pending} pending · {counts.done} done · {counts.cancelled} cancelled · {Math.max(0, 49 - appts.filter((a) => ["booked", "confirmed", "pending_approval", "done"].includes(a.status)).length)} free</span>
         <span className="spacer" />
         <span className="lg-key"><i className="k booked" />booked</span>
         <span className="lg-key"><i className="k confirmed" />confirmed</span>

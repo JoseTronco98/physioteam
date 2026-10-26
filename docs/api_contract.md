@@ -43,10 +43,12 @@ interface ChatMessage {
 interface Approval {
   id: string;
   kind: "booking" | "late_cancel_charge" | "sign_document" | "plan_change" | "outbound_message"
-      | "invoice_request" | "reschedule_batch" | "discount";
+      | "invoice_request" | "reschedule_batch" | "discount" | "waitlist_offer";
   title: string;                  // "Book Sam Ortega, Wed 17:00"
   detail: string;                 // markdown
-  patient_id?: string;
+  patient_id?: string;            // waitlist_offer: the person who would be offered the slot
+  related_patient_ids?: string[]; // waitlist_offer: who cancelled + waitlist candidates
+                                  // waitlist_offer options: offer / offer_next / keep
   created: string;                // sim time
   status: "pending" | "approved" | "rejected" | "waived";
   options: { id: string; label: string; primary?: boolean }[];   // e.g. approve / reject / waive once
@@ -170,7 +172,7 @@ interface AutopilotStats {
 | POST | `/api/spend/caching` | `{on}` | `Spend` |
 | GET | `/api/safety/log` | | `SafetyEvent[]` |
 | POST | `/api/safety/test/{kind}` | kind = `injection` / `hidden_pdf` / `red_flag` / `budget` | `{accepted, run_id}` |
-| POST | `/api/uploads` | multipart `file` | `{id, name, kind, url}` |
+| POST | `/api/uploads` | multipart `file` (png, jpg, webp, pdf; or session notes as docx, txt, md → `kind: "notes"`) | `{id, name, kind, url}` |
 | GET | `/api/files/{id}` | | the uploaded or demo file |
 | GET | `/api/demo_files` | | `{id, name, kind, url, description}[]` (referral photo, X-ray report, booby-trapped PDF) |
 | POST | `/api/autopilot/start` | `{days: 5, patients: 20}` | `AutopilotStats` |

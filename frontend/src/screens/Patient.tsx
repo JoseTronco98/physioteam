@@ -72,7 +72,7 @@ export function Patient() {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [sel, setSel] = useState<Persona | null>(null);
   const [thread, setThread] = useState<string | null>(null);
-  const [lang, setLang] = useState<Lang>("en");
+  const lang: Lang = "en";  // the clinic writes in English to everyone
   const [prefill, setPrefill] = useState({ text: "", n: 0 });
 
   useEffect(() => { void run(api.personas()).then((p) => p && setPersonas(p)); }, [run]);
@@ -82,9 +82,19 @@ export function Patient() {
     const r = await run(api.startPersona(p.id, l));
     if (r) { setThread(r.thread); await loadThread(r.thread); }
   };
-  useEffect(() => { if (!sel && personas.length) void start(personas[0]); }, [personas]); // eslint-disable-line
+  // #patient/valeria opens that persona directly.
+  useEffect(() => {
+    if (sel || !personas.length) return;
+    const want = window.location.hash.split("/")[1];
+    void start(personas.find((p) => p.id === want) ?? personas[0]);
+  }, [personas]); // eslint-disable-line
 
-  const onTry = (m: Mission) => {
+  const onTry = async (m: Mission) => {
+    if (m.setup && !m.try_prompt) {
+      const r = await run(api.tryMission(m.id.split(":").pop() ?? m.id));
+      if (r) toast(r.note);
+      return;
+    }
     if (!m.try_prompt) return;
     setPrefill((p) => ({ text: m.try_prompt ?? "", n: p.n + 1 }));
   };
@@ -104,16 +114,13 @@ export function Patient() {
           </div>
         ))}
         <div className="gcontrols">
-          <div className="seg gseg">
-            <button className={cx(lang === "en" && "on")} onClick={() => { setLang("en"); if (sel) void start(sel, "en"); }}>English</button>
-            <button className={cx(lang === "es" && "on")} onClick={() => { setLang("es"); if (sel) void start(sel, "es"); }}>Español</button>
-          </div>
           <button className="gbtn" disabled={!sel} title="Jump to 10:00 the day before your next session: the reminder arrives"
             onClick={async () => { if (sel) { const s = await run(api.dayBefore(sel.id)); if (s) setState(s); } }}>Jump to day before</button>
           <button className="gbtn" disabled={!sel} title="Simulate the therapy session: the therapist bot writes notes and the agents produce documents and your follow-up"
             onClick={async () => { if (sel) { const r = await run(api.sessionHappens(sel.id)); if (r) toast("Session simulated: watch the follow-up arrive"); } }}>Session happens</button>
         </div>
-        {sel && <MissionsPanel missions={sel.missions} onTry={onTry} title="Things to try" />}
+        {/* patient missions are tracked per persona: "p_valeria:s_book" */}
+        {sel && <MissionsPanel missions={sel.missions.map((m) => ({ ...m, id: `${sel.patient_id}:${m.id}` }))} onTry={onTry} title="Things to try" />}
         <p className="gsub">Try it puts the words in the phone for you. Edit them, or just press Enter. Attach demo files with 📎. A bot plays the therapist here.</p>
       </GuideSide>
       <div className="phone-stage">

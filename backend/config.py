@@ -49,12 +49,12 @@ ACCESS_CODE = os.getenv("ACCESS_CODE", "").strip()
 LEAD_REQUEST_LIMIT = 10
 SUB_REQUEST_LIMIT = 6
 MAX_TOOL_CALLS = 12
-MAX_OUTPUT_TOKENS = 1800
+MAX_OUTPUT_TOKENS = 4000   # the full evaluation form (every section + tables) needs ~2-3k
 HISTORY_MESSAGES = 24          # messages of chat memory kept per thread
 PATIENT_BOT_MAX_TURNS = 3      # simulator: replies a patient bot gives per conversation burst
 
 USD_RATE = float(os.getenv("USD_RATE", "18.5"))  # MXN per USD, for display only
-VERSION = "1.2.0"
+VERSION = "1.4.0"
 
 
 def api_key() -> str:

@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any, Literal, Optional
@@ -27,7 +28,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.usage import UsageLimits
 
-from . import config, runtime, safety, store
+from . import config, runtime, safety, store, whatsapp
 from .runtime import Session
 
 AGENT_INFO = [
@@ -194,7 +195,7 @@ def patient_brief(c: dict, p: dict, private: bool = True) -> dict:
 def appt_view(c: dict, a: dict) -> dict:
     p = c["patients"].get(a["patient_id"], {})
     return {"appointment_id": a["id"], "patient": p.get("name"), "patient_id": a["patient_id"],
-            "patient_language": c.get("persona_lang", {}).get(a["patient_id"]) or p.get("lang", "en"),
+            "patient_language": "en",
             "when": store.nice(a["start"]), "start": a["start"], "service": a["service"], "status": a["status"],
             "session": f"{a['session_number']}/{a['plan_total']}" if a.get("session_number") else None,
             "flags": list(set(a.get("flags", []) + [f for f in p.get("flags", []) if f in ("owes", "red_flag", "at_risk")]))}
@@ -289,6 +290,18 @@ def describe_approval(c: dict, a: dict) -> dict:
         out["if_approve"] = [f"It is sent to {to}", "A signed copy stays in the folder"]
         out["if_decline"] = ["Nothing is sent; the draft stays in the folder"]
         out["preview"] = {"to": to, "text": body[:700]}
+    elif kind == "weekly_reports":
+        n = len(pl.get("patients") or [])
+        out["if_approve"] = [f"I draft {n} progress reports from the signed notes (a few seconds each)",
+                             "Each report is filed in the patient's folder", "Each one waits for your OK before it is sent"]
+        out["if_decline"] = ["Nothing is drafted or sent this week"]
+    elif kind == "waitlist_offer":
+        slot = pl.get("slot", c["now"])
+        out["if_approve"] = [f"{first} gets a message offering {store.nice(slot)}",
+                             "If they say yes, it's booked and confirmed for you",
+                             "If they say no, you get one card for the next person"]
+        out["if_decline"] = ["The slot stays free and nobody is contacted"]
+        out["preview"] = {"to": p.get("name", ""), "text": offer_text(c, p["id"], slot)} if p else None
     elif kind == "invoice_request":
         out["if_approve"] = ["The request goes to your accountant's outbox", f"{first} is told it's on its way"]
         out["if_decline"] = ["Nothing is sent to the accountant"]
@@ -305,12 +318,18 @@ APPROVE = [{"id": "approve", "label": "Approve", "primary": True}, {"id": "rejec
 
 
 def patient_lang(c: dict, pid: str) -> str:
-    return c.get("persona_lang", {}).get(pid) or c["patients"].get(pid, {}).get("lang", "en")
+    """The clinic writes in English to everyone (project decision; Spanish text paths stay for later)."""
+    return "en"
 
 
 def send_to_patient(s: Session, pid: str, text: str, author: str = "Movimiento Fisioterapia (AI assistant)",
                     agent: str = "patient_success", **extra) -> dict:
-    """All outbound patient messages pass the last safety check."""
+    """All outbound patient messages pass the last safety check. A relative who never wrote to the
+    clinic (e.g. Valeria's mother) is reached through the family member who did."""
+    to = whatsapp_contact(s.c, pid)
+    if to != pid:
+        text = f"(For {s.c['patients'][pid]['name'].split()[0]}) {text}"
+        pid = to
     reason = safety.check_outbound(text)
     if reason:
         s.safety("injection_direct", "held", f"Held outgoing message to {s.c['patients'][pid]['name']}: {reason}", pid)
@@ -318,7 +337,19 @@ def send_to_patient(s: Session, pid: str, text: str, author: str = "Movimiento F
                 else "Déjeme consultarlo con la terapeuta y le confirmo.")
     if needs_disclosure(s.c, pid) and not re.search(r"\bAI assistant|asistente (de IA|virtual)", text, re.I):
         text = (DISCLOSURE["es"] if patient_lang(s.c, pid) == "es" else DISCLOSURE["en"]) + "\n\n" + text
-    return s.add_message(f"wa:{pid}", "agent", author, text, agent=agent, **extra)
+    m = s.add_message(f"wa:{pid}", "agent", author, text, agent=agent, **extra)
+    whatsapp.outbound(s, pid, text)   # live clinic only: the real message goes out on WhatsApp
+    return m
+
+
+def whatsapp_contact(c: dict, pid: str) -> str:
+    def wrote(x: str) -> bool:
+        return any(m["thread"] == f"wa:{x}" and m["role"] == "patient" for m in c["messages"])
+    p = c["patients"].get(pid, {})
+    if wrote(pid) or not p.get("household_id"):
+        return pid
+    return next((x["id"] for x in c["patients"].values()
+                 if x["id"] != pid and x.get("household_id") == p["household_id"] and wrote(x["id"])), pid)
 
 
 DISCLOSURE = {
@@ -400,32 +431,49 @@ class EvaluationDraft(BaseModel):
     chief_complaint: Optional[str] = None
     mechanism_and_date: Optional[str] = None
     family_history: Optional[str] = None
+    family_history_checklist: list[Literal["diabetes", "liver disease", "asthma", "endocrine", "hypertension", "cancer", "heart disease",
+                                           "kidney disease", "mental illness", "other"]] = Field(
+        default_factory=list, description="Family conditions the notes or intake say are present (empty if not stated)")
     medical_history: Optional[str] = None
     previous_injuries: Optional[str] = None
     surgeries: Optional[str] = None
     allergies: Optional[str] = None
+    venous_insufficiency: Optional[str] = None
+    systemic_diseases: Optional[str] = None
     medications: Optional[str] = None
     lifestyle: Optional[str] = None
-    height_weight: Optional[str] = None
+    alcohol: Optional[str] = None
+    smoking: Optional[str] = None
+    exercise_hours_week: Optional[str] = None
+    stress: Optional[str] = None
+    sleep: Optional[str] = None
+    height_weight: Optional[str] = Field(None, description="e.g. '1.70 m / 82 kg / BMI 28.4' (BMI only if both were given)")
     can_climb_stairs: Optional[str] = None
     pain_location: Optional[str] = None
     pain_vas: Optional[str] = None
     pain_pattern: Optional[str] = None
+    pain_description: Optional[str] = Field(None, description="The patient's words for the pain: sharp, burning, aching...")
     aggravating_factors: Optional[str] = None
     relieving_factors: Optional[str] = None
     posture: Optional[str] = None
+    symptom_map: Optional[str] = Field(None, description="Body chart in words: where pain, neuralgia, radiation and tingling/numbness are")
     palpation: Optional[str] = None
+    inflammation: Optional[str] = None
+    scar: Optional[str] = None
+    joint_play: Optional[str] = None
     rom: Optional[str] = None
     strength: Optional[str] = None
     sensation: Optional[str] = None
+    observations: Optional[str] = None
     special_tests: Optional[str] = None
     functional_tests: Optional[str] = None
     imaging: Optional[str] = None
     patient_goals: Optional[str] = None
-    pt_impression: Optional[str] = Field(None, description="Only if the therapist stated an impression; label it as the therapist's impression.")
+    pt_impression: Optional[str] = Field(None, description="The therapist's physiotherapy diagnosis, only if they stated it.")
     pt_problems: Optional[str] = None
     pt_goals: Optional[str] = None
     treatment: Optional[str] = None
+    prognosis: Optional[str] = Field(None, description="The therapist's prognosis (e.g. 'good, return to running in 6-8 weeks'), only if stated.")
     from_session_notes: list[str] = Field(default_factory=list, description="Keys whose value came from the session notes (not the intake chat).")
     missing_important: list[str] = Field(default_factory=list, description="Important keys still empty that the therapist should fill.")
     # Tables for the evaluation PDF. Only rows actually measured or stated; never invent values.
@@ -440,10 +488,10 @@ class EvaluationDraft(BaseModel):
 
 
 class SoapNote(BaseModel):
-    subjective: Optional[str] = None
-    objective: Optional[str] = None
-    assessment: Optional[str] = None
-    plan: Optional[str] = None
+    subjective: Optional[str] = Field(None, description="What the patient reports: pain now (VAS 0-10) and since last visit, function, home-program adherence, concerns")
+    objective: Optional[str] = Field(None, description="What was measured or observed today: ROM, strength, tests, gait, swelling, and the treatment given (techniques, exercises, sets x reps, modalities)")
+    assessment: Optional[str] = Field(None, description="Response to treatment and progress toward the plan goals, as the therapist stated it")
+    plan: Optional[str] = Field(None, description="Next session focus, progressions, home program changes, review points")
     missing: list[str] = Field(default_factory=list)
 
 
@@ -485,14 +533,17 @@ router = Agent(output_type=Route, deps_type=Ctx, instructions=config.prompt("rou
 # Tools shared by several agents
 # --------------------------------------------------------------------------------------
 async def _clinic_info(ctx: RunContext[Ctx], topic: str = "all") -> dict:
-    """Clinic facts: services and prices (MXN), packages, address and landmarks, map link, hours,
-    payment methods, and policies. Always use this instead of guessing.
+    """Clinic facts: services and prices (MXN), packages, conditions the clinic treats, address and
+    landmarks, map link, hours, payment methods, and policies. Always use this instead of guessing.
 
     Args:
-        topic: 'prices', 'address', 'hours', 'payment', 'policies' or 'all'.
+        topic: 'prices', 'conditions', 'address', 'hours', 'payment', 'policies' or 'all'.
     """
     ctx.deps.log("clinic_info", topic)
     ci = ctx.deps.c["clinic"]
+    if topic == "conditions":
+        ctx.deps.s.mission("s_first_contact")
+        return {"conditions_treated": ci.get("conditions_treated", store.CLINIC["conditions_treated"])}
     if topic == "prices":
         ctx.deps.s.mission("s_prices")
         return {"services": ci["services"], "packages": ci["packages"], "usd_rate": ci["usd_rate"]}
@@ -509,20 +560,22 @@ async def _clinic_info(ctx: RunContext[Ctx], topic: str = "all") -> dict:
 
 
 async def _find_slots(ctx: RunContext[Ctx], weekday: Optional[str] = None, after_hour: Optional[int] = None,
-                before_hour: Optional[int] = None, limit: int = 5) -> dict:
-    """Free agenda slots (1 hour each) from now through Saturday, optionally filtered.
+                before_hour: Optional[int] = None, limit: int = 5, weeks_ahead: int = 2) -> dict:
+    """Free agenda slots (1 hour each) from now, optionally filtered. The agenda is open 5 weeks ahead.
 
     Args:
         weekday: 'mon'..'sat' to restrict to one day.
         after_hour: earliest hour, e.g. 16 for 4 pm or later.
         before_hour: hours strictly before this, e.g. 13 for mornings.
         limit: maximum number of slots.
+        weeks_ahead: 1 = this week only, up to 5.
     """
     c = ctx.deps.c
     wd = None
     if weekday:
         wd = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5}.get(weekday.lower()[:3])
-    slots = store.free_slots(c, weekday=wd, after_hour=after_hour, before_hour=before_hour, limit=limit)
+    slots = store.free_slots(c, days=7 * max(1, min(weeks_ahead, 5)) - 1, weekday=wd, after_hour=after_hour,
+                             before_hour=before_hour, limit=limit)
     ctx.deps.log("find_slots", f"{len(slots)} free" + (f" on {weekday}" if weekday else ""))
     return {"slots": [{"start": x, "label": store.nice(x)} for x in slots]}
 
@@ -546,9 +599,26 @@ def _allowed(ctx: RunContext[Ctx], pid: str | None) -> dict:
     p = find_patient(ctx.deps.c, pid)
     if p and me.get("household_id") and p.get("household_id") == me["household_id"]:
         return p
-    if p and p["id"] == "p_rosa" and me["id"] == "p_valeria":
+    raise ValueError("You can only see or change appointments for yourself or your own family members. "
+                     "For a family member who is new to the clinic, use request_booking with new_family_member_name.")
+
+
+def _new_family_member(ctx: RunContext[Ctx], name: str, age: Optional[int], condition: str) -> dict:
+    """A contact books for a relative who is new to the clinic: create the record in their household."""
+    c, me = ctx.deps.c, _contact(ctx)
+    p = find_patient(c, name)
+    if p and (p.get("household_id") and p.get("household_id") == me.get("household_id")):
         return p
-    raise ValueError("You can only see or change appointments for yourself or your own family members.")
+    if not me.get("household_id"):
+        me["household_id"] = "h_" + me["id"][2:]
+    pid = "p_" + re.sub(r"\W+", "_", name.lower()).strip("_")[:20]
+    while pid in c["patients"]:
+        pid += "_2"
+    p = store._patient(pid, name.strip().title(), age or 0, condition or "New patient (family of " + me["name"] + ")", "inquiry")
+    p["household_id"] = me["household_id"]
+    c["patients"][pid] = p
+    ctx.deps.log("new_family_member", f"{p['name']} added to {me['name']}'s family")
+    return p
 
 
 @patient_success.tool
@@ -565,7 +635,8 @@ async def my_profile(ctx: RunContext[Ctx]) -> dict:
 
 @patient_success.tool
 async def request_booking(ctx: RunContext[Ctx], start: str, service: str = "evaluation", for_patient: Optional[str] = None,
-                    reason: str = "") -> dict:
+                    reason: str = "", new_family_member_name: Optional[str] = None, new_family_member_age: Optional[int] = None,
+                    new_family_member_condition: str = "") -> dict:
     """Hold a slot and ask the therapist to confirm. New patients and first visits always need the
     therapist's OK; you tell the patient it is pending confirmation.
 
@@ -574,9 +645,16 @@ async def request_booking(ctx: RunContext[Ctx], start: str, service: str = "eval
         service: evaluation, conventional, redcord or shockwave.
         for_patient: a household member's name or id when booking for family; omit for the contact.
         reason: short reason (e.g. 'elbow fracture rehab, referred by Dr. Ortiz').
+        new_family_member_name: the contact books for a relative who is NOT yet a patient (e.g. their mother):
+            their full name; a record is created in the contact's family.
+        new_family_member_age: that relative's age, if known.
+        new_family_member_condition: that relative's condition in plain words (e.g. 'facial palsy, left, since Saturday').
     """
     c = ctx.deps.c
-    target = _allowed(ctx, for_patient) if for_patient else _contact(ctx)
+    if new_family_member_name:
+        target = _new_family_member(ctx, new_family_member_name, new_family_member_age, new_family_member_condition)
+    else:
+        target = _allowed(ctx, for_patient) if for_patient else _contact(ctx)
     slot = parse_slot(c, start)
     if not slot:
         return {"ok": False, "error": "Unrecognised time. Use a slot from find_slots."}
@@ -595,6 +673,34 @@ async def request_booking(ctx: RunContext[Ctx], start: str, service: str = "eval
         ctx.deps.s.mission("s_household")
     return {"ok": True, "status": "pending therapist confirmation", "appointment_id": a["id"], "when": store.nice(slot),
             "price_mxn": store.SERVICE_PRICE[service]}
+
+
+@patient_success.tool
+async def join_waitlist(ctx: RunContext[Ctx], days: list[Literal["mon", "tue", "wed", "thu", "fri", "sat"]],
+                        from_hour: int = 11, to_hour: int = 20, note: str = "", for_patient: Optional[str] = None,
+                        move_from_appointment_id: Optional[str] = None) -> dict:
+    """Put the contact on the waitlist when the time they want is full, or when they booked a later time
+    but want to be moved if something earlier opens. If such a time frees up, the therapist is asked and
+    you offer it to them.
+
+    Args:
+        days: the days they want.
+        from_hour: earliest start hour they can do (24 h).
+        to_hour: latest start hour, exclusive (24 h).
+        note: their words, e.g. 'Thursday afternoons after work'.
+        for_patient: household member name or id, if it is for them.
+        move_from_appointment_id: their existing booking to release if the earlier slot is taken.
+    """
+    c = ctx.deps.c
+    target = _allowed(ctx, for_patient) if for_patient else _contact(ctx)
+    idx = [["mon", "tue", "wed", "thu", "fri", "sat"].index(d) for d in days] or [0, 1, 2, 3, 4, 5]
+    label = note or f"{', '.join(DAY_NAMES[i] for i in idx)} {from_hour}:00-{to_hour}:00"
+    c.setdefault("waitlist_prefs", {})[target["id"]] = {"days": idx, "from": from_hour, "to": to_hour, "note": label,
+                                                        "move_from": move_from_appointment_id}
+    if target["id"] not in c["waitlist"]:
+        c["waitlist"].append(target["id"])
+    ctx.deps.log("join_waitlist", f"{target['name']}: {label}")
+    return {"ok": True, "on_waitlist_for": label}
 
 
 @patient_success.tool
@@ -646,10 +752,12 @@ async def cancel_or_reschedule(ctx: RunContext[Ctx], appointment_id: str, new_st
         ctx.deps.log("cancel_or_reschedule", f"{p['name']} moved {store.nice(old)} -> {store.nice(slot)}")
         s.add_message("ops", "system", "Operations Partner", f"{p['name']} moved **{store.nice(old)}** to **{store.nice(slot)}** ({reason or 'no reason given'}).", agent="ops_partner")
         late = late and False  # moving within the week keeps the session, no charge
+        propose_waitlist(ctx.deps.s, old, p["id"])
     else:
         a["status"] = "late_cancel" if late else "cancelled"
         ctx.deps.log("cancel_or_reschedule", f"{p['name']} cancelled {store.nice(old)} ({round(hrs, 1)} h notice)")
-        _offer_waitlist(ctx.deps, old)
+        if propose_waitlist(ctx.deps.s, old, p["id"]):
+            result["note"] = "The therapist will decide whether to offer the freed slot to the waitlist; do not mention other patients."
     if late and not new_start:
         waived_before = "waived_once" in p["flags"]
         opts = [{"id": "charge", "label": f"Charge MXN {store.SERVICE_PRICE[a['service']]}", "primary": True},
@@ -731,7 +839,8 @@ async def escalate_to_therapist(ctx: RunContext[Ctx], summary: str, urgency: Lit
       medication questions). They are NOT sent now; they go on the therapist's list for the next session.
     - soon: needs the therapist today (complaint, wants to stop treatment, pain clearly worse than usual).
     - urgent: a safety concern that cannot wait (the code already escalates classic red flags).
-    Logistics (prices, booking, moving, cancelling, address, payments, receipts, exercises on file) you solve yourself.
+    Logistics (prices, booking, moving, cancelling, address, payments, receipts, exercises on file) and "do you treat X?"
+    when X is in clinic_info('conditions') you solve yourself, even when the patient says it is urgent.
 
     Args:
         summary: what the patient asked or reported, in one or two sentences.
@@ -754,8 +863,10 @@ async def escalate_to_therapist(ctx: RunContext[Ctx], summary: str, urgency: Lit
                 "tell_patient": "It is on the therapist's list for the next session; no need to wait for a reply now."}
     thread = "health" if kind in ("clinical_question", "exercise_check", "medication") else "ops"
     lead = "Health Advisor" if thread == "health" else "Operations Partner"
+    q = open_question(ctx.deps.c, me["id"], summary, thread, kind)
     s.add_message(thread, "agent", lead, f"**Needs you {'now' if urgency == 'urgent' else 'today'}: {me['name']}**: {summary}\n\n"
-                  f"_Restrictions on file: {me.get('restrictions') or 'none'}_", agent="patient_success")
+                  f"Just reply here (for example \"yes, book her\") and I'll answer {me['name'].split()[0]} on WhatsApp. "
+                  f"_Ref {q['id']} · restrictions on file: {me.get('restrictions') or 'none'}_", agent="patient_success")
     if urgency == "urgent":
         s.alert("info", f"Urgent from {me['name']}: {summary}", me["id"])
     if kind == "exercise_check":
@@ -763,6 +874,140 @@ async def escalate_to_therapist(ctx: RunContext[Ctx], summary: str, urgency: Lit
     if kind == "medication":
         s.mission("s_medication")
     return {"ok": True, "told_patient": "The therapist will answer personally."}
+
+
+# --------------------------------------------------------------------------------------
+# After every session: thank you + a 1-5 rating, then one "why" question (in code, no model)
+# --------------------------------------------------------------------------------------
+FEEDBACK_AUTHOR = "Movimiento Fisioterapia (AI assistant)"
+
+
+def ask_feedback(s: Session, pid: str, appointment_id: str | None = None) -> None:
+    c = s.c
+    first = c["patients"][pid]["name"].split()[0]
+    send_to_patient(s, pid, f"Hi {first}, thank you for your time today! We'd love your feedback: how would you rate today's session "
+                            f"from 1 to 5? (5 = excellent)", author=FEEDBACK_AUTHOR)
+    ap = c["appointments"].get(appointment_id or "", {})
+    c.setdefault("feedback", []).append({"patient_id": pid, "appointment_id": appointment_id, "session": ap.get("session_number"),
+                                         "asked": c["now"], "status": "asked"})
+    s.mission("t_feedback")
+
+
+def handle_feedback(s: Session, pid: str, text: str) -> bool:
+    """Returns True if the message was the rating or the follow-up comment (and was answered)."""
+    c = s.c
+    fb = next((f for f in reversed(c.get("feedback", [])) if f["patient_id"] == pid and f["status"] in ("asked", "rated")), None)
+    if not fb:
+        return False
+    first = c["patients"][pid]["name"].split()[0]
+    t = (text or "").strip()
+    if safety.red_flags(t) or safety.injection(t):
+        return False  # the safety layer must see it
+    if fb["status"] == "asked":
+        m = re.search(r"\b([1-5])\b|([1-5])\s*/\s*5|(⭐+)", t)
+        if not m or len(t) > 160:
+            return False
+        stars = int(m.group(1) or m.group(2) or len(m.group(3)))
+        fb.update(rating=stars, status="rated", rated=c["now"])
+        store.feedback_doc(c, pid)
+        s.emit("doc_updated", patient_id=pid, doc_id=(store.find_doc(c, pid, "feedback") or {}).get("id"), version=1)
+        s.mission("s_feedback")
+        q = (f"Thank you, {first}! What did you like most about today?" if stars >= 4 else
+             f"Thank you for being honest, {first}. What could we have done better? It goes straight to Lic. Ana.")
+        send_to_patient(s, pid, q, author=FEEDBACK_AUTHOR)
+        if stars <= 3:
+            s.add_message("ops", "system", "Operations Partner", f"⭐ **{stars}/5 from {c['patients'][pid]['name']}** after today's session. I asked why.",
+                          agent="ops_partner")
+        return True
+    fb.update(comment=t[:400], status="done")
+    store.feedback_doc(c, pid)
+    if fb.get("rating", 5) <= 3:
+        s.add_message("ops", "system", "Operations Partner", f"Why {first} rated {fb['rating']}/5: \"{t[:300]}\"", agent="ops_partner")
+    if "?" in t:
+        return False  # they also asked something: let Patient Success answer it
+    send_to_patient(s, pid, "Thank you, that really helps. See you at your next session!" if fb.get("rating", 5) >= 4
+                    else "Thank you. Lic. Ana will read it personally, and we'll work on it.", author=FEEDBACK_AUTHOR)
+    return True
+
+
+def satisfaction(c: dict, since: str = store.WEEK_START) -> dict:
+    r = [f["rating"] for f in c.get("feedback", []) if f.get("rating") and (f.get("rated") or f["asked"]) >= since]
+    week = [f for f in c.get("feedback", []) if (f.get("rated") or f["asked"]) >= since]
+    return {"average": round(sum(r) / len(r), 2) if r else None, "replies": len(r), "asked": len(week),
+            "low": [{"patient": c["patients"][f["patient_id"]]["name"], "rating": f["rating"], "comment": f.get("comment")}
+                    for f in week if f.get("rating") and f["rating"] <= 3]}
+
+
+def open_question(c: dict, pid: str, question: str, thread: str, kind: str = "other") -> dict:
+    """A patient question that waits for the therapist. Kept with its patient so a short answer
+    ('yes, we treat it, book her') is never separated from what was asked."""
+    qs = c.setdefault("open_questions", [])
+    q = {"id": f"Q{len(qs) + 1}", "patient_id": pid, "patient": c["patients"][pid]["name"], "question": question,
+         "kind": kind, "thread": thread, "time": c["now"], "status": "open"}
+    qs.append(q)
+    return q
+
+
+def wa_transcript(c: dict, pid: str, n: int = 8) -> str:
+    msgs = [m for m in c["messages"] if m["thread"] == f"wa:{pid}"][-n:]
+    return "\n".join(f"{'PATIENT' if m['role'] == 'patient' else 'CLINIC'}: {m['text'][:300]}" for m in msgs)
+
+
+def therapist_context(c: dict, thread: str) -> str:
+    """What the lead must see before reading the therapist's message: open patient questions and the
+    latest posts in this chat (escalations and system notes are not in the model's own memory)."""
+    out = []
+    qs = [q for q in c.get("open_questions", []) if q["status"] == "open"]
+    if qs:
+        out.append("OPEN PATIENT QUESTIONS WAITING FOR THE THERAPIST (if her message answers one, even briefly like "
+                   "'yes, book her', call answer_patient_question with that ref; the patient is the one named here):")
+        out += [f"- {q['id']}: {q['patient']} ({q['patient_id']}) asked at {store.nice(q['time'])}: {q['question']}" for q in qs[-6:]]
+    posts = [m for m in c["messages"] if m["thread"] == thread and m["role"] in ("system", "agent")][-4:]
+    if posts:
+        out.append("LATEST POSTS IN THIS CHAT (oldest first):")
+        out += [f"- {m['author']}: {m['text'][:260]}" for m in posts]
+    return "\n".join(out)
+
+
+async def _answer_patient_question(ctx: RunContext[Ctx], ref: str, therapist_answer: str, also_do: str = "") -> dict:
+    """Answer an open patient question with the therapist's reply. Patient Success writes the WhatsApp
+    message with the original question and the conversation in front of it, so the answer cannot be
+    attached to the wrong topic.
+
+    Args:
+        ref: the question ref, e.g. 'Q3'.
+        therapist_answer: the therapist's answer, in her words.
+        also_do: an extra step she asked for (e.g. 'offer the earliest evaluation slots and book it').
+    """
+    c = ctx.deps.c
+    q = next((x for x in c.get("open_questions", []) if x["id"].lower() == ref.lower().strip()), None)
+    if not q:
+        return {"error": f"Unknown ref {ref}. Open refs: {[x['id'] for x in c.get('open_questions', []) if x['status'] == 'open']}"}
+    pid = q["patient_id"]
+    sub = ctx.deps.child("patient_success")
+    sub.patient_id = pid
+    sub.lang = patient_lang(c, pid)
+    ctx.deps.s.emit("delegation", run_id=ctx.deps.run_id, **{"from": ctx.deps.agent, "to": "patient_success", "task": f"Answer {q['patient']}: {q['question'][:80]}"})
+    text = await run("patient_success", patient_success, sub,
+                     f"{now_line(c)}\nThe therapist answered a question {q['patient']} asked.\n"
+                     f"THE QUESTION: {q['question']}\nTHE THERAPIST'S ANSWER: {therapist_answer}\n"
+                     + (f"ALSO DO: {also_do} (use your tools, e.g. find_slots and request_booking; for a relative who is not a "
+                        f"patient yet use new_family_member_name)\n" if also_do else "")
+                     + f"RECENT WHATSAPP CONVERSATION:\n{wa_transcript(c, pid)}\n\n"
+                     f"Write ONE WhatsApp message to {q['patient']} that answers exactly that question (same person, same "
+                     f"condition) with the therapist's answer and the next step. Add no medical advice of your own. "
+                     f"Reply with only the message text.",
+                     history_key=None, lead=False)
+    send_to_patient(ctx.deps.s, pid, text)
+    for other in c.get("open_questions", []):
+        if other["patient_id"] == pid and other["status"] == "open":
+            other.update(status="answered", answer=therapist_answer, answered_at=c["now"])
+    ctx.deps.log("answer_patient_question", f"{q['id']} {q['patient']}")
+    return {"sent_to": q["patient"], "message": text}
+
+
+ops_partner.tool(_answer_patient_question, name="answer_patient_question")
+health_advisor.tool(_answer_patient_question, name="answer_patient_question")
 
 
 @patient_success.tool
@@ -978,7 +1223,60 @@ async def get_agenda(ctx: RunContext[Ctx], day: str = "today") -> dict:
     ctx.deps.log("get_agenda", f"{base.strftime('%a %b %d')}: {len(rows)} appointments")
     ctx.deps.s.mission("t_day")
     return {"day": base.strftime("%A %b %d"), "appointments": rows, "free_slots": free, "blocked": blocked,
-            "waitlist": [c["patients"][w]["name"] for w in c["waitlist"]]}
+            "waitlist": [f"{c['patients'][w]['name']} (wants {waitlist_pref(c, w)['note']})" for w in c["waitlist"]]}
+
+
+@ops_partner.tool
+async def book_plan_sessions(ctx: RunContext[Ctx], patient: str) -> dict:
+    """Book the rest of a patient's treatment plan at 3 sessions a week (their usual days and hour)
+    over the coming weeks, and send them the schedule. The therapist asked, so it is booked directly.
+
+    Args:
+        patient: name or id.
+    """
+    c = ctx.deps.c
+    p = find_patient(c, patient)
+    if not p:
+        return {"error": f"No patient matches '{patient}'."}
+    week = max(0, (store.dt(c["now"]) - store.dt(store.WEEK_START)).days // 7)
+    booked = store.book_recurring(c, p["id"], start_week=week)
+    if booked:
+        lines = "\n".join(f"- {store.nice(a['start'])}" for a in booked[:6]) + (f"\n…and {len(booked) - 6} more." if len(booked) > 6 else "")
+        send_to_patient(ctx.deps.s, p["id"], f"Hi {p['name'].split()[0]}, your next sessions are booked:\n{lines}\nYou'll get a reminder the day before each one.")
+    ctx.deps.log("book_plan_sessions", f"{p['name']}: {len(booked)} sessions")
+    return {"booked": [store.nice(a["start"]) for a in booked], "sessions_left_in_plan": (p.get("plan_total") or 0) - (p.get("sessions_done") or 0)}
+
+
+@ops_partner.tool
+async def patient_feedback(ctx: RunContext[Ctx]) -> dict:
+    """What patients said after their sessions this week: average 1-5 rating, replies, and every low
+    rating with its reason."""
+    s = satisfaction(ctx.deps.c)
+    ctx.deps.log("patient_feedback", f"{s['replies']} ratings")
+    return s
+
+
+@ops_partner.tool
+async def agenda_outlook(ctx: RunContext[Ctx], weeks: int = 5) -> dict:
+    """This week and the next weeks at a glance: sessions booked, free hours, utilization, and the
+    patients whose plans end (so you can suggest a re-evaluation or discharge).
+
+    Args:
+        weeks: how many weeks, 1 to 5.
+    """
+    c = ctx.deps.c
+    monday = store.dt(store.WEEK_START).replace(hour=0, minute=0)
+    rows = []
+    for w in range(max(1, min(weeks, store.AGENDA_WEEKS))):
+        lo, hi = store.ts(monday + timedelta(days=7 * w)), store.ts(monday + timedelta(days=7 * w + 7))
+        appts = [a for a in store.appointments_between(c, lo, hi) if a["status"] in ("booked", "confirmed", "pending_approval", "done")]
+        cap = sum(len(store.open_hours(monday + timedelta(days=7 * w + d))) for d in range(6))
+        ending = sorted({c["patients"][a["patient_id"]]["name"] for a in appts if a.get("session_number") and a["session_number"] == a.get("plan_total")})
+        rows.append({"week_of": (monday + timedelta(days=7 * w)).strftime("%b %d"), "sessions": len(appts), "capacity": cap,
+                     "free": cap - len(appts), "utilization_pct": round(100 * len(appts) / cap), "plans_ending": ending})
+    ctx.deps.log("agenda_outlook", f"{len(rows)} weeks")
+    ctx.deps.s.mission("t_outlook")
+    return {"weeks": rows, "note": "Later weeks fill up as new patients' plans are approved (3x/week)."}
 
 
 def _notify(ctx: Ctx, pid: str, en: str, es: str) -> None:
@@ -1108,33 +1406,191 @@ async def cancel_appointment(ctx: RunContext[Ctx], appointment_id: str, charge: 
     if charge:
         store.add_ledger(c, a["patient_id"], "charge", store.SERVICE_PRICE[a["service"]], f"Late cancellation {store.nice(a['start'])} {a['id']}")
     ctx.deps.log("cancel_appointment", f"{c['patients'][a['patient_id']]['name']} {store.nice(a['start'])}")
-    _offer_waitlist(ctx.deps, a["start"])
-    return {"ok": True}
+    card = propose_waitlist(ctx.deps.s, a["start"], a["patient_id"])
+    return {"ok": True, "waitlist": f"Approval card: offer it to {card['candidate']}?" if card else "Nobody on the waitlist asked for this time."}
 
 
-def _offer_waitlist(ctx: Ctx, slot: str) -> list[str]:
-    c = ctx.c
-    offered = []
-    for pid in c["waitlist"][:2]:
-        p = c["patients"][pid]
-        _notify(ctx, pid, f"Hello {p['name'].split()[0]}, a slot just opened on {store.nice(slot)}. Would you like it? Reply YES and I'll hold it for you.",
-                f"Hola {p['name'].split()[0]}, se liberó un espacio el {store.nice(slot)}. ¿Lo quiere? Responda SÍ y se lo aparto.")
-        offered.append(p["name"])
-    if offered:
-        c.setdefault("offers", []).append({"slot": slot, "to": list(c["waitlist"][:2]), "time": c["now"]})
-        ctx.log("offer_slot_to_waitlist", f"{store.nice(slot)} offered to {', '.join(offered)}")
-        ctx.s.mission("t_waitlist")
-    return offered
+# --------------------------------------------------------------------------------------
+# Waitlist: a freed slot -> the therapist says who gets it -> the offer -> booked on "yes"
+# --------------------------------------------------------------------------------------
+DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+
+def waitlist_pref(c: dict, pid: str) -> dict:
+    return c.setdefault("waitlist_prefs", {}).get(pid) or {"days": [0, 1, 2, 3, 4, 5], "from": 0, "to": 24, "note": "any time"}
+
+
+def waitlist_candidates(c: dict, slot: str, exclude: tuple | list = (), only_matches: bool = True) -> list[str]:
+    """Waitlisted patients who asked for this kind of slot (day and hours), best first. People with a
+    session that same day are skipped."""
+    d = store.dt(slot)
+    out, rest = [], []
+    for pid in c["waitlist"]:
+        if pid in exclude or pid not in c["patients"]:
+            continue
+        if any(x["start"][:10] == slot[:10] for x in store.upcoming_for(c, pid)):
+            continue
+        pr = waitlist_pref(c, pid)
+        (out if d.weekday() in pr["days"] and pr["from"] <= d.hour < pr["to"] else rest).append(pid)
+    return out if only_matches else out + rest
+
+
+def propose_waitlist(s: Session, slot: str, freed_by: str | None = None, exclude: tuple | list = ()) -> dict | None:
+    """A slot was freed. If someone on the waitlist asked for it, ask the therapist first (one card)."""
+    c = s.c
+    if slot <= c["now"] or store.busy_at(c, slot):
+        return None
+    cands = waitlist_candidates(c, slot, exclude)
+    who = c["patients"].get(freed_by or "", {}).get("name", "A patient")
+    if not cands:
+        if freed_by:
+            s.add_message("ops", "system", "Operations Partner",
+                          f"{who}'s **{store.nice(slot)}** is free again. Nobody on the waitlist asked for that time, so I left it open.", agent="ops_partner")
+        return None
+    first = c["patients"][cands[0]]
+    options = [{"id": "offer", "label": f"Offer to {first['name'].split()[0]}", "primary": True}]
+    if len(cands) > 1:
+        options.append({"id": "offer_next", "label": f"Offer to {c['patients'][cands[1]]['name'].split()[0]} instead"})
+    options.append({"id": "keep", "label": "Keep it free"})
+    lines = "\n".join(f"- **{c['patients'][x]['name']}** asked for {waitlist_pref(c, x)['note']}" for x in cands[:3])
+    ctx = Ctx(s=s, agent="ops_partner", run_id="waitlist", thread="ops")
+    a = new_approval(ctx, "waitlist_offer", f"{store.nice(slot)} is free. Offer it to {first['name']}",
+                     f"{'**' + who + '** cancelled' if freed_by else 'This slot opened'}: **{store.nice(slot)}**.\n\nOn the waitlist:\n{lines}",
+                     options, {"slot": slot, "candidates": cands, "freed_by": freed_by, "declined": list(exclude)}, cands[0])
+    a["related_patient_ids"] = [x for x in [freed_by, *cands] if x]
+    s.emit("approval", approval=public_approval(a))
+    s.add_message("ops", "system", "Operations Partner",
+                  f"{who + chr(39) + 's ' if freed_by else ''}**{store.nice(slot)}** is free. {first['name']} asked for {waitlist_pref(c, cands[0])['note']}. Want me to offer it? (card in Approvals)",
+                  agent="ops_partner")
+    runtime.audit(s, "tool", agent="ops_partner", tool="propose_waitlist", summary=f"{store.nice(slot)} -> {first['name']}")
+    return {"approval_id": a["id"], "candidate": first["name"]}
+
+
+def offer_text(c: dict, pid: str, slot: str) -> str:
+    first = c["patients"][pid]["name"].split()[0]
+    if patient_lang(c, pid) == "es":
+        return f"¡Hola {first}! Se liberó el espacio que buscaba: {store.nice(slot)}. ¿Se lo apartamos? Responda SÍ y queda confirmado."
+    return f"Hi {first}! The time you were hoping for just opened up: {store.nice(slot)}. Would you like it? Reply YES and it's yours."
+
+
+def make_offer(s: Session, pid: str, slot: str, candidates: list[str] | None = None, declined: list[str] | None = None) -> None:
+    c = s.c
+    send_to_patient(s, pid, offer_text(c, pid, slot), agent="patient_success")
+    c.setdefault("offers", []).append({"slot": slot, "to": [pid], "time": c["now"], "status": "open",
+                                       "candidates": candidates or [pid], "declined": declined or []})
+    s.add_message("ops", "system", "Operations Partner", f"Offered **{store.nice(slot)}** to {c['patients'][pid]['name']}. I'll book it if they say yes.",
+                  agent="ops_partner")
+    s.mission("t_waitlist")
+
+
+def open_offer(c: dict, pid: str) -> dict | None:
+    return next((o for o in reversed(c.get("offers", [])) if o.get("status", "open") == "open" and pid in o["to"]), None)
+
+
+@patient_success.tool
+async def answer_slot_offer(ctx: RunContext[Ctx], accept: bool) -> dict:
+    """The contact answers a freed-slot offer from the waitlist. Booking and the confirmation message
+    happen in code; afterwards just answer anything else they asked.
+
+    Args:
+        accept: True if they take the slot, False if they can't.
+    """
+    s, pid = ctx.deps.s, ctx.deps.patient_id
+    off = open_offer(s.c, pid)
+    if not off:
+        return {"ok": False, "error": "There is no open offer for this contact."}
+    (accept_offer if accept else decline_offer)(s, off, pid)
+    ctx.deps.log("answer_slot_offer", f"{s.c['patients'][pid]['name']} {'took' if accept else 'declined'} {store.nice(off['slot'])}")
+    return {"ok": True, "status": off["status"], "note": "The patient already got the confirmation; don't repeat it."}
+
+
+def accept_offer(s: Session, off: dict, pid: str) -> bool:
+    c = s.c
+    if store.busy_at(c, off["slot"]):
+        send_to_patient(s, pid, "So sorry, that time was just taken. We'll keep you on the list." if patient_lang(c, pid) == "en"
+                        else "Una disculpa, ese horario se acaba de ocupar. Lo seguimos teniendo en la lista.", agent="patient_success")
+        off["status"] = "taken"
+        return True
+    p = c["patients"][pid]
+    store.add_appointment(c, pid, off["slot"], p["service"], "confirmed")
+    off["status"] = "accepted"
+    if pid in c["waitlist"]:
+        c["waitlist"].remove(pid)
+    # "Book me X, but move me if something earlier opens": the later booking is released (and offered on).
+    pref = c.get("waitlist_prefs", {}).pop(pid, {}) or {}
+    moved = c["appointments"].get(pref.get("move_from") or "")
+    if moved and moved["status"] in ("booked", "confirmed", "pending_approval"):
+        moved["status"] = "cancelled"
+    else:
+        moved = None
+    price = store.SERVICE_PRICE.get(p["service"], 400)
+    if not moved:
+        c.setdefault("recovered", []).append({"slot": off["slot"], "patient_id": pid, "mxn": price, "time": c["now"]})
+    first = p["name"].split()[0]
+    send_to_patient(s, pid, f"Done, {first}! We moved you from {store.nice(moved['start'])} to {store.nice(off['slot'])}. See you then."
+                    if moved else f"Done, {first}! You're booked for {store.nice(off['slot'])}. See you then.", agent="patient_success")
+    s.add_message("ops", "system", "Operations Partner",
+                  (f"**Slot filled.** {p['name']} moved up from {store.nice(moved['start'])} to **{store.nice(off['slot'])}** and is off the waitlist."
+                   if moved else f"**Slot filled.** {p['name']} took **{store.nice(off['slot'])}** (MXN {price:,} recovered) and is off the waitlist."),
+                  agent="ops_partner")
+    if moved:
+        propose_waitlist(s, moved["start"], pid)
+    s.mission("t_waitlist")
+    # Other open cards that offered this person: drop them, or close the card if nobody is left.
+    for a in list(c["approvals"].values()):
+        if a["kind"] == "waitlist_offer" and a["status"] == "pending" and pid in a["payload"]["candidates"]:
+            a.update(status="rejected", resolved_by="system", resolved_at=c["now"])
+            s.emit("approval", approval=public_approval(a))
+            pl = a["payload"]
+            if not propose_waitlist(s, pl["slot"], None, [*pl.get("declined", []), pid]):
+                s.add_message("ops", "system", "Operations Partner",
+                              f"Closed the card for **{store.nice(pl['slot'])}**: {p['name']} already got a slot and nobody else on the waitlist fits.", agent="ops_partner")
+    return True
+
+
+def decline_offer(s: Session, off: dict, pid: str) -> bool:
+    c = s.c
+    off["status"] = "declined"
+    off["declined"] = list({*off.get("declined", []), pid})
+    send_to_patient(s, pid, "No problem! You stay on the list and we'll write when another time opens." if patient_lang(c, pid) == "en"
+                    else "¡Sin problema! Sigue en la lista y le escribimos cuando se libere otro horario.", agent="patient_success")
+    if not propose_waitlist(s, off["slot"], None, off["declined"]):
+        s.add_message("ops", "system", "Operations Partner",
+                      f"{c['patients'][pid]['name']} can't make **{store.nice(off['slot'])}**. Nobody else on the waitlist fits, so it stays free.", agent="ops_partner")
+    return True
 
 
 @ops_partner.tool
-async def offer_slot_to_waitlist(ctx: RunContext[Ctx], start: str) -> dict:
-    """Offer a free slot to the patients on the waitlist (first to say yes gets it).
+async def offer_slot_to_waitlist(ctx: RunContext[Ctx], start: str, patient: Optional[str] = None) -> dict:
+    """The therapist asked you to offer a free slot from the waitlist: message the best match now
+    (the person who asked for that day and time). If they decline, the therapist gets a card for the next one.
 
     Args:
         start: the free slot 'YYYY-MM-DDTHH:MM'.
+        patient: a specific waitlisted patient the therapist named; omit to pick the best match.
     """
-    return {"offered_to": _offer_waitlist(ctx.deps, parse_slot(ctx.deps.c, start) or start)}
+    c = ctx.deps.c
+    slot = parse_slot(c, start) or start
+    if store.busy_at(c, slot):
+        return {"error": "That slot is not free."}
+    if patient:
+        p = find_patient(c, patient)
+        cands = [p["id"]] if p else []
+    else:
+        cands = waitlist_candidates(c, slot, only_matches=False)
+    if not cands:
+        return {"offered_to": None, "note": "The waitlist is empty."}
+    make_offer(ctx.deps.s, cands[0], slot, cands)
+    ctx.deps.log("offer_slot_to_waitlist", f"{store.nice(slot)} offered to {c['patients'][cands[0]]['name']}")
+    return {"offered_to": c["patients"][cands[0]]["name"], "asked_for": waitlist_pref(c, cands[0])["note"]}
+
+
+@ops_partner.tool
+async def waitlist(ctx: RunContext[Ctx]) -> dict:
+    """Who is on the waitlist and which days and times each person asked for."""
+    c = ctx.deps.c
+    ctx.deps.log("waitlist", f"{len(c['waitlist'])} waiting")
+    return {"waitlist": [{"patient": c["patients"][x]["name"], "wants": waitlist_pref(c, x)["note"]} for x in c["waitlist"]]}
 
 
 @ops_partner.tool
@@ -1156,7 +1612,10 @@ async def message_patient(ctx: RunContext[Ctx], patient: str, instruction: str) 
     ctx.deps.s.emit("delegation", run_id=ctx.deps.run_id, **{"from": "ops_partner", "to": "patient_success", "task": instruction[:120]})
     text = await run("patient_success", patient_success, sub,
                      f"{now_line(c)}\nTHE THERAPIST (via Operations Partner) asks you to write ONE WhatsApp message to "
-                     f"{p['name']} ({sub.lang}). Instruction: {instruction}\nReply with only the message text.",
+                     f"{p['name']}. Instruction: {instruction}\n"
+                     f"RECENT WHATSAPP CONVERSATION (stay on its topic; never mix in this patient's other conditions):\n{wa_transcript(c, p['id'])}\n"
+                     f"Never include medical advice, even if the instruction asks for it: clinical guidance only comes from Lic. Ana "
+                     f"in her own words. Reply with only the message text.",
                      history_key=None, lead=False)
     send_to_patient(ctx.deps.s, p["id"], text)
     ctx.deps.log("message_patient", f"to {p['name']}")
@@ -1249,6 +1708,65 @@ async def get_patient(ctx: RunContext[Ctx], patient: str) -> dict:
 ops_partner.tool(get_patient, name="get_patient")
 
 
+def evaluation_parts(vals: dict, intake: dict) -> tuple[list, dict, dict, list]:
+    """EvaluationDraft -> (form fields, structured data for the PDF, flat values, missing keys).
+    Shared by complete_evaluation and the seeded clinical history."""
+    vals = dict(vals)
+    from_notes = set(vals.pop("from_session_notes", []) or [])
+    missing = vals.pop("missing_important", []) or []
+    hist = {k: vals.get(src) for k, src in (("family", "family_history"), ("personal", "medical_history"), ("surgeries", "surgeries"),
+                                             ("medications", "medications"), ("lifestyle", "lifestyle"))}
+    hist["family_checklist"] = vals.pop("family_history_checklist", []) or []
+    life = {k: vals.pop(k, None) for k in ("alcohol", "smoking", "exercise_hours_week", "stress", "sleep")}
+    palp = {k: vals.pop(k, None) for k in ("inflammation", "scar", "joint_play")}
+    if not vals.get("lifestyle") and any(life.values()):
+        vals["lifestyle"] = "; ".join(f"{k.replace('_', ' ')}: {v}" for k, v in life.items() if v)
+    if not vals.get("palpation") and any(palp.values()):
+        vals["palpation"] = "; ".join(f"{k.replace('_', ' ')}: {v}" for k, v in palp.items() if v)
+    data = {"pain": vals.pop("pain_detail", None) or {}, "history": hist, "lifestyle": life, "palpation": palp,
+            "prognosis": vals.get("prognosis"),
+            "rom": vals.pop("rom_table", []), "strength": vals.pop("strength_table", []),
+            "special_tests": vals.pop("special_tests_table", []), "functional": vals.pop("functional_table", []),
+            "problems": vals.pop("problem_list", []), "short_term_goals": vals.pop("short_term_goals", []),
+            "long_term_goals": vals.pop("long_term_goals", []), "impression": vals.get("pt_impression")}
+    # keep the flat form readable in the app when only tables were given
+    if not vals.get("rom") and data["rom"]:
+        vals["rom"] = "; ".join(f"{r['joint']} {r['movement']} R {r.get('right') or '-'} / L {r.get('left') or '-'}" for r in data["rom"])
+    if not vals.get("strength") and data["strength"]:
+        vals["strength"] = "; ".join(f"{r['muscle']} R {r.get('right') or '-'} / L {r.get('left') or '-'}" for r in data["strength"])
+    if not vals.get("special_tests") and data["special_tests"]:
+        vals["special_tests"] = "; ".join(f"{r['test']} R {r.get('right') or '-'} / L {r.get('left') or '-'}" for r in data["special_tests"])
+    fields = []
+    for k, lbl in store.EVAL_FIELDS:
+        v = vals.get(k)
+        src = "empty" if not v else ("session_notes" if k in from_notes or k not in intake else "intake_chat")
+        fields.append({"key": k, "label": lbl, "value": v, "source": src, "needs_review": not v})
+    return fields, data, vals, missing
+
+
+def plan_parts(p: dict, conventional: int, redcord: int, shockwave: int, frequency: str, focus: str, goals: str,
+               next_session: str, review_point: str, payment_terms: str, phases: list | None, short_term_goals: list | None,
+               long_term_goals: list | None, precautions: list | None, home_program: list | None,
+               review_points: list | None) -> tuple[list, dict, int, int, str, str]:
+    """Plan inputs -> (form fields, structured data, total sessions, cost, mix, package hint). Cost in code."""
+    total = conventional + redcord + shockwave
+    cost = (conventional * store.SERVICE_PRICE["conventional"] + redcord * store.SERVICE_PRICE["redcord"]
+            + shockwave * store.SERVICE_PRICE["shockwave"])
+    package_hint = " (10-session package available: MXN 5,000)" if total == 10 and conventional == 5 and (redcord + shockwave) == 5 else ""
+    mix = ", ".join(f"{n} {k}" for n, k in ((conventional, "conventional"), (redcord, "Redcord"), (shockwave, "shockwave")) if n)
+    vals = {"total_sessions": str(total), "frequency": frequency, "therapy_mix": mix, "focus": focus, "goals": goals,
+            "next_session": next_session, "total_cost_mxn": f"{cost}{package_hint}", "payment_terms": payment_terms,
+            "review_point": review_point}
+    fields = [{"key": k, "label": lbl, "value": vals.get(k), "source": "agent_proposal", "needs_review": False} for k, lbl in store.PLAN_FIELDS]
+    data = {"schedule": {"sessions": total, "frequency": frequency, "mix": mix},
+            "phases": [ph.model_dump() if hasattr(ph, "model_dump") else ph for ph in (phases or [])],
+            "short_term_goals": short_term_goals or [], "long_term_goals": long_term_goals or [],
+            "precautions": precautions or ([p["restrictions"]] if p.get("restrictions") else []),
+            "home_program": home_program or [], "review_points": review_points or [review_point],
+            "cost": {"total_mxn": f"{cost:,}{package_hint}", "terms": payment_terms}}
+    return fields, data, total, cost, mix, package_hint
+
+
 @health_advisor.tool
 async def complete_evaluation(ctx: RunContext[Ctx], patient: str, session_notes: str) -> dict:
     """Clinical Scribe turns the therapist's session notes (plus the intake chat) into the evaluation
@@ -1267,40 +1785,59 @@ async def complete_evaluation(ctx: RunContext[Ctx], patient: str, session_notes:
                                        f"FORM: initial evaluation.\nPATIENT: {p['name']}, {p['age']}, {p['condition']}\n"
                                        f"INTAKE CHAT ANSWERS (source intake_chat): {json.dumps(p.get('intake') or {}, ensure_ascii=False)}\n"
                                        f"THERAPIST SESSION NOTES (source session_notes): {session_notes}", lead=False)
-    vals = draft.model_dump()
-    from_notes = set(vals.pop("from_session_notes", []) or [])
-    missing = vals.pop("missing_important", []) or []
-    hist = {k: vals.get(src) for k, src in (("family", "family_history"), ("personal", "medical_history"), ("surgeries", "surgeries"),
-                                             ("medications", "medications"), ("lifestyle", "lifestyle"))}
-    data = {"pain": vals.pop("pain_detail", None) or {}, "history": hist,
-            "rom": vals.pop("rom_table", []), "strength": vals.pop("strength_table", []),
-            "special_tests": vals.pop("special_tests_table", []), "functional": vals.pop("functional_table", []),
-            "problems": vals.pop("problem_list", []), "short_term_goals": vals.pop("short_term_goals", []),
-            "long_term_goals": vals.pop("long_term_goals", []), "impression": vals.get("pt_impression")}
-    # keep the flat form readable in the app when only tables were given
-    if not vals.get("rom") and data["rom"]:
-        vals["rom"] = "; ".join(f"{r['joint']} {r['movement']} R {r.get('right') or '-'} / L {r.get('left') or '-'}" for r in data["rom"])
-    if not vals.get("strength") and data["strength"]:
-        vals["strength"] = "; ".join(f"{r['muscle']} R {r.get('right') or '-'} / L {r.get('left') or '-'}" for r in data["strength"])
-    if not vals.get("special_tests") and data["special_tests"]:
-        vals["special_tests"] = "; ".join(f"{r['test']} R {r.get('right') or '-'} / L {r.get('left') or '-'}" for r in data["special_tests"])
-    intake = p.get("intake") or {}
-    fields = []
-    for k, lbl in store.EVAL_FIELDS:
-        v = vals.get(k)
-        src = "empty" if not v else ("session_notes" if k in from_notes or k not in intake else "intake_chat")
-        fields.append({"key": k, "label": lbl, "value": v, "source": src, "needs_review": not v})
+    fields, data, vals, missing = evaluation_parts(draft.model_dump(), p.get("intake") or {})
     ev = store.find_doc(c, p["id"], "evaluation")
     d = store.add_document(c, p["id"], "evaluation", "Initial evaluation", fields, author="clinical_scribe", status="draft",
                            reason="Completed from session notes", doc_id=ev["id"] if ev else None, data=data)
+    for k in ("pt_impression", "prognosis"):
+        if not vals.get(k) and k not in missing:
+            missing.append(k)
     new_approval(ctx.deps, "sign_document", f"Sign evaluation: {p['name']}",
                  f"Evaluation v{d['version']} drafted from your notes. {sum(1 for f in fields if f['value'])} of {len(fields)} fields filled; "
-                 f"still empty: {', '.join(missing) or 'none flagged'}.", [{"id": "approve", "label": "Sign", "primary": True}, {"id": "reject", "label": "Needs changes"}],
+                 f"still empty: {', '.join(missing) or 'none flagged'}."
+                 + (" **Your physiotherapy diagnosis and prognosis are still missing**: reply with them and I'll add them." if
+                    not (vals.get("pt_impression") and vals.get("prognosis")) else ""), [{"id": "approve", "label": "Sign", "primary": True}, {"id": "reject", "label": "Needs changes"}],
                  {"doc_id": d["id"]}, p["id"])
     s.emit("doc_updated", doc_id=d["id"], patient_id=p["id"], version=d["version"])
     ctx.deps.log("complete_evaluation", f"{p['name']} v{d['version']}")
     s.mission("t_notes")
     return {"doc_id": d["id"], "version": d["version"], "filled": [f["label"] for f in fields if f["value"]], "empty_important": missing}
+
+
+@health_advisor.tool
+async def update_evaluation(ctx: RunContext[Ctx], patient: str, physiotherapy_diagnosis: Optional[str] = None,
+                            prognosis: Optional[str] = None, other_fields: Optional[dict[str, str]] = None) -> dict:
+    """Add what the therapist tells you after the evaluation draft (her physiotherapy diagnosis, the
+    prognosis, or any other field) as a new version of the evaluation, in her words.
+
+    Args:
+        patient: name or id.
+        physiotherapy_diagnosis: her physiotherapy diagnosis, verbatim.
+        prognosis: her prognosis, verbatim.
+        other_fields: other evaluation keys to fill, e.g. {'observations': '...'}.
+    """
+    c, s = ctx.deps.c, ctx.deps.s
+    p = find_patient(c, patient)
+    ev = store.find_doc(c, p["id"], "evaluation") if p else None
+    if not ev:
+        return {"error": "No evaluation yet; send the first-visit notes first."}
+    last = ev["versions"][-1]
+    upd = {k: v for k, v in {"pt_impression": physiotherapy_diagnosis, "prognosis": prognosis, **(other_fields or {})}.items() if v}
+    fields = [dict(f, **({"value": upd[f["key"]], "source": "therapist", "needs_review": False} if f["key"] in upd else {}))
+              for f in last["fields"]]
+    keys = {f["key"] for f in fields}
+    fields += [{"key": k, "label": lbl, "value": upd.get(k), "source": "therapist" if upd.get(k) else "empty", "needs_review": not upd.get(k)}
+               for k, lbl in store.EVAL_FIELDS if k not in keys]
+    data = dict(last.get("data") or {})
+    if physiotherapy_diagnosis:
+        data["impression"] = physiotherapy_diagnosis
+    if prognosis:
+        data["prognosis"] = prognosis
+    d = store.add_document(c, p["id"], "evaluation", "Initial evaluation", fields, author="health_advisor", status="draft",
+                           reason="Therapist's diagnosis / prognosis added", doc_id=ev["id"], data=data)
+    s.emit("doc_updated", doc_id=d["id"], patient_id=p["id"], version=d["version"])
+    ctx.deps.log("update_evaluation", f"{p['name']} v{d['version']}: {', '.join(upd)}")
+    return {"doc_id": d["id"], "version": d["version"], "updated": list(upd)}
 
 
 @health_advisor.tool
@@ -1318,10 +1855,15 @@ async def write_soap_note(ctx: RunContext[Ctx], patient: str, session_notes: str
     s.emit("delegation", run_id=ctx.deps.run_id, **{"from": "health_advisor", "to": "clinical_scribe", "task": f"SOAP for {p['name']}"})
     note: SoapNote = await run("clinical_scribe", clinical_scribe_soap, ctx.deps.child("clinical_scribe"),
                                f"FORM: SOAP note for today's session.\nPATIENT: {p['name']}, {p['condition']}\nNOTES: {session_notes}", lead=False)
-    vals = {"date": store.nice(c["now"]), **note.model_dump()}
+    # Notes that say which session they belong to ("session 5 · Mon Oct 26, 11:00") keep that date and number.
+    head = (session_notes[:200] + " " + ctx.deps.shared.get("attached_notes", "")[:200])
+    m = re.search(r"session (\d+)\s*·\s*(\w{3} \w{3} \d{1,2}, \d{1,2}:\d{2})", head)
+    when = m.group(2) if m else store.nice(c["now"])
+    num = m.group(1) if m else (p.get("sessions_done") or "?")
+    vals = {"date": when, "session": f"{num} of {p.get('plan_total') or '?'}", **note.model_dump()}
     fields = [{"key": k, "label": lbl, "value": vals.get(k), "source": "session_notes" if vals.get(k) else "empty",
                "needs_review": not vals.get(k)} for k, lbl in store.SOAP_FIELDS]
-    d = store.add_document(c, p["id"], "soap", f"SOAP {store.nice(c['now'])}", fields, author="clinical_scribe", status="draft",
+    d = store.add_document(c, p["id"], "soap", f"SOAP {when}", fields, author="clinical_scribe", status="draft",
                            reason="From session notes")
     s.emit("doc_updated", doc_id=d["id"], patient_id=p["id"], version=1)
     ctx.deps.log("write_soap_note", p["name"])
@@ -1359,24 +1901,10 @@ async def propose_treatment_plan(ctx: RunContext[Ctx], patient: str, conventiona
     p = find_patient(c, patient)
     if not p:
         return {"error": f"No patient matches '{patient}'."}
-    total = conventional_sessions + redcord_sessions + shockwave_sessions
-    cost = (conventional_sessions * store.SERVICE_PRICE["conventional"] + redcord_sessions * store.SERVICE_PRICE["redcord"]
-            + shockwave_sessions * store.SERVICE_PRICE["shockwave"])
-    package_hint = ""
-    if total == 10 and conventional_sessions == 5 and (redcord_sessions + shockwave_sessions) == 5:
-        package_hint = " (10-session package available: MXN 5,000)"
-    mix = ", ".join(f"{n} {k}" for n, k in ((conventional_sessions, "conventional"), (redcord_sessions, "Redcord"), (shockwave_sessions, "shockwave")) if n)
-    vals = {"total_sessions": str(total), "frequency": frequency, "therapy_mix": mix, "focus": focus, "goals": goals,
-            "next_session": next_session, "total_cost_mxn": f"{cost}{package_hint}", "payment_terms": payment_terms,
-            "review_point": review_point}
-    fields = [{"key": k, "label": lbl, "value": vals.get(k), "source": "agent_proposal", "needs_review": False} for k, lbl in store.PLAN_FIELDS]
+    fields, data, total, cost, mix, package_hint = plan_parts(
+        p, conventional_sessions, redcord_sessions, shockwave_sessions, frequency, focus, goals, next_session, review_point,
+        payment_terms, phases, short_term_goals, long_term_goals, precautions, home_program, review_points)
     old = store.find_doc(c, p["id"], "treatment_plan")
-    data = {"schedule": {"sessions": total, "frequency": frequency, "mix": mix},
-            "phases": [ph.model_dump() for ph in (phases or [])],
-            "short_term_goals": short_term_goals or [], "long_term_goals": long_term_goals or [],
-            "precautions": precautions or ([p["restrictions"]] if p.get("restrictions") else []),
-            "home_program": home_program or [], "review_points": review_points or [review_point],
-            "cost": {"total_mxn": f"{cost:,}{package_hint}", "terms": payment_terms}}
     d = store.add_document(c, p["id"], "treatment_plan", "Treatment plan", fields, author="health_advisor", status="draft",
                            reason=reason, doc_id=old["id"] if old else None, data=data)
     new_approval(ctx.deps, "plan_change", f"Approve plan v{d['version']}: {p['name']}",
@@ -1495,6 +2023,10 @@ async def draft_progress_report(ctx: RunContext[Ctx], patient: str, summary: str
     d = store.add_document(c, p["id"], "progress_report", title, body_md=report_markdown, author="health_advisor",
                            status="draft", reason=f"Requested {'by ' + doc_name if send_to_doctor else 'by the therapist'}",
                            doc_id=old["id"] if old and old["status"] == "draft" else None, data=data)
+    for a in c["approvals"].values():  # a revised draft replaces the older card for the same report
+        if a["status"] == "pending" and a["payload"].get("doc_id") == d["id"]:
+            a.update(status="rejected", resolved_by="system", resolved_at=c["now"])
+            ctx.deps.s.emit("approval", approval=public_approval(a))
     if send_to_doctor:
         new_approval(ctx.deps, "outbound_message", f"Send progress report to {doc_name}: {p['name']}",
                      report_markdown[:900], [{"id": "approve", "label": "Approve and send", "primary": True}, {"id": "reject", "label": "Hold"}],
@@ -1509,6 +2041,39 @@ async def draft_progress_report(ctx: RunContext[Ctx], patient: str, summary: str
     ctx.deps.s.mission("t_doctor_report" if send_to_doctor else "t_progress_report")
     return {"doc_id": d["id"], "version": d["version"], "saved_in_folder": True,
             "status": "waiting for approval to send" if send_to_doctor else "saved, waiting for signature"}
+
+
+@health_advisor.tool
+async def reply_to_doctor(ctx: RunContext[Ctx], doctor: str, message: str, patient: Optional[str] = None,
+                          attach_plan: bool = False) -> dict:
+    """Write to a referring doctor on the therapist's instruction (e.g. 'we adjusted the plan'). It waits
+    for the therapist's approval, then goes to the doctor's channel; attach_plan adds the current plan.
+
+    Args:
+        doctor: doctor name or id.
+        message: the message, in the therapist's voice (signed by her).
+        patient: the patient it is about.
+        attach_plan: include a summary of the patient's current treatment plan.
+    """
+    c = ctx.deps.c
+    d = c["doctors"].get(doctor) or next((x for x in c["doctors"].values() if doctor.lower().replace("dr. ", "").replace("dra. ", "") in x["name"].lower()), None)
+    if not d:
+        return {"error": f"Unknown doctor '{doctor}'. Doctors: {[x['name'] for x in c['doctors'].values()]}"}
+    p = find_patient(c, patient) if patient else None
+    body = message.strip()
+    if attach_plan and p:
+        plan = store.find_doc(c, p["id"], "treatment_plan")
+        if plan:
+            f = store.fields_dict(plan)
+            body += (f"\n\n**Treatment plan v{plan['version']} ({p['name']})**: {f.get('total_sessions')} sessions, {f.get('frequency')}, "
+                     f"{f.get('therapy_mix')}. Focus: {f.get('focus')}. Goals: {f.get('goals')}.")
+    doc = store.add_document(c, (p or {}).get("id") or next(iter(c["patients"])), "doctor_letter", f"Letter to {d['name']}",
+                             body_md=body, author="health_advisor", status="draft", reason="Reply to the referring doctor")
+    new_approval(ctx.deps, "outbound_message", f"Send to {d['name']}" + (f": {p['name']}" if p else ""), body[:900],
+                 [{"id": "approve", "label": "Approve and send", "primary": True}, {"id": "reject", "label": "Hold"}],
+                 {"doc_id": doc["id"], "doctor_id": d["id"], "patient_id": (p or {}).get("id")}, (p or {}).get("id"))
+    ctx.deps.log("reply_to_doctor", f"to {d['name']}")
+    return {"ok": True, "status": "waiting for the therapist's approval"}
 
 
 @health_advisor.tool
@@ -1673,13 +2238,32 @@ async def therapist_turn(s: Session, thread: str, text: str, run_id: str, attach
     agent_id = "ops_partner" if lead == "ops" else "health_advisor"
     ag = ops_partner if lead == "ops" else health_advisor
     ctx = Ctx(s=s, agent=agent_id, run_id=run_id, thread=thread)
-    prompt = f"{now_line(c)}\nTHERAPIST ({thread} chat): {text}"
+    extra = therapist_context(c, thread)
+    prompt = f"{now_line(c)}\n" + (extra + "\n" if extra else "") + f"THERAPIST ({thread} chat): {text}"
     if attachment_id and attachment_id in c["attachments"]:
         att = c["attachments"][attachment_id]
-        prompt += f"\n[Attached file: '{att['name']}', attachment_id={attachment_id}. Use read_study with this id if it is a study or referral.]"
+        if att["kind"] == "notes":
+            body = Path(att["path"]).read_text(encoding="utf-8")[:6000]
+            ctx.shared["attached_notes"] = body
+            prompt += (f"\n[The therapist attached her session notes '{att['name']}'. The notes (usually the first line) or her message say which patient and session. "
+                       f"First visit: complete_evaluation then propose_treatment_plan. Follow-up: write_soap_note.]\nATTACHED NOTES:\n{body}")
+        else:
+            prompt += f"\n[Attached file: '{att['name']}', attachment_id={attachment_id}. Use read_study with this id if it is a study or referral.]"
     out = await run(agent_id, ag, ctx, prompt, history_key=f"{thread}:{agent_id}")
     s.add_message(thread, "agent", NAMES[agent_id], out, agent=agent_id, tools=ctx.shared["tools"],
                   agents_involved=ctx.shared["agents"], cost_usd=round(ctx.shared.get("usd", 0.0), 5))
+
+
+async def draft_report_for_doctor(s: Session, pid: str, run_id: str) -> None:
+    """End of week: one progress report for the patient's referring doctor (waits for approval to send)."""
+    c = s.c
+    p = c["patients"][pid]
+    d = c["doctors"][p["referring_doctor_id"]]
+    ctx = Ctx(s=s, agent="health_advisor", run_id=run_id, thread="health")
+    await run("health_advisor", health_advisor, ctx,
+              f"{now_line(c)}\nEND-OF-WEEK REPORT the therapist approved: draft the progress report for {p['name']} for "
+              f"{d['name']} ({d['specialty']}). Call progress_data, then draft_progress_report with send_to_doctor=True. "
+              f"Reply with one line.", history_key=None)
 
 
 async def doctor_turn(s: Session, did: str, text: str, run_id: str) -> None:
@@ -1692,10 +2276,15 @@ async def doctor_turn(s: Session, did: str, text: str, run_id: str) -> None:
         s.safety("injection_direct", "blocked", f"{d['name']} channel: suspicious instructions blocked.")
         return
     ctx = Ctx(s=s, agent="health_advisor", run_id=run_id, thread=f"doc:{did}")
+    recent = "\n".join(f"- {m['author']}: {m['text'][:200]}" for m in c["messages"] if m["thread"] == f"doc:{did}")
     prompt = (f"{now_line(c)}\nA REFERRING DOCTOR, {d['name']} ({d['specialty']}), wrote to the clinic: \"{clean}\"\n"
-              f"If they ask about a patient, call progress_data and then draft_progress_report with send_to_doctor=True (it waits for the "
-              f"therapist's approval before it is sent). Then reply with ONE short line for the therapist saying what the doctor "
-              f"asked and what is ready for approval.")
+              f"Earlier in this channel:\n{recent[-1500:]}\n"
+              f"- If they ask how a patient is doing: progress_data, then draft_progress_report with send_to_doctor=True (it waits "
+              f"for the therapist's approval).\n"
+              f"- If they ask to change a patient's treatment (more sessions, different focus): draft the new plan with "
+              f"propose_treatment_plan reflecting the request (the therapist approves it; she decides).\n"
+              f"- If they only thank or confirm: do nothing.\n"
+              f"Then reply with ONE short line for the therapist: what the doctor said and what waits for her approval.")
     out = await run("health_advisor", health_advisor, ctx, prompt, history_key=None)
     s.add_message("health", "agent", "Health Advisor", f"🩺 **{d['name']}:** {out}", agent="health_advisor",
                   tools=ctx.shared["tools"], agents_involved=ctx.shared["agents"], cost_usd=round(ctx.shared.get("usd", 0.0), 5))
@@ -1705,7 +2294,7 @@ async def patient_turn(s: Session, pid: str, text: str, run_id: str, attachment_
     """A patient (human tester or bot) writes on WhatsApp. The safety layer runs first, in code."""
     c = s.c
     p = c["patients"][pid]
-    lang = c.get("persona_lang", {}).get(pid) or safety.guess_lang(text)
+    lang = "en"  # the clinic replies in English to everyone
     clean, removed = safety.clean_text(text)
     if removed:
         s.safety("injection_hidden", "blocked", f"Removed {removed} invisible characters from {p['name']}'s message.", pid)
@@ -1728,7 +2317,8 @@ async def patient_turn(s: Session, pid: str, text: str, run_id: str, attachment_
         s.safety("red_flag", "escalated", f"{p['name']}: {'; '.join(flags)}. \"{clean[:140]}\"", pid)
         s.alert("red_flag", f"RED FLAG - {p['name']}: {flags[0]}. Call the patient.", pid)
         s.add_message("health", "agent", "Health Advisor", f"**Red flag from {p['name']}**: {'; '.join(flags)}.\n\n> {clean}\n\n"
-                      f"Coaching stopped for this patient. Suggested action: call now; if signs are confirmed, refer to urgent care. "
+                      f"The assistant only told {p['name'].split()[0]} that you were notified; it gave no advice and will not answer "
+                      f"clinical messages from this patient until you do. **Please call or reply yourself** in Clinic Messages. "
                       f"Restrictions on file: {p.get('restrictions') or 'none'}.", agent="safety")
         send_to_patient(s, pid, safety.SAFE_REPLY[lang]["red_flag"], agent="safety")
         s.mission("t_redflag")
@@ -1754,6 +2344,12 @@ async def patient_turn(s: Session, pid: str, text: str, run_id: str, attachment_
             raise
         except Exception as exc:  # noqa: BLE001
             att_note += f"\n[Could not read the file: {exc}]"
+    if "red_flag" in p["flags"] and not p.get("red_flag_answered"):
+        notes.append("This patient reported a possible emergency earlier. Lic. Ana handles it personally: do not discuss symptoms or "
+                     "give any advice; if they mention it, say she has been notified and will contact them. Logistics are fine.")
+    off = open_offer(c, pid)
+    if off:
+        notes.append(f"We offered them the freed slot {store.nice(off['slot'])} from the waitlist. If this message accepts or declines it, call answer_slot_offer.")
     ctx = Ctx(s=s, agent="patient_success", run_id=run_id, thread=f"wa:{pid}", patient_id=pid, lang=lang)
     prompt = (f"{now_line(c)}\nYou are chatting with {p['name']} (contact id {pid}). Reply in "
               f"{'Spanish (usted)' if lang == 'es' else 'English'}.\n" + ("\n".join(notes) + "\n" if notes else "")
@@ -1761,5 +2357,5 @@ async def patient_turn(s: Session, pid: str, text: str, run_id: str, attachment_
     out = await run("patient_success", patient_success, ctx, prompt, history_key=f"wa:{pid}")
     send_to_patient(s, pid, out, tools=ctx.shared["tools"], agents_involved=ctx.shared["agents"],
                     cost_usd=round(ctx.shared.get("usd", 0.0), 5))
-    if p["status"] == "inquiry" and any(t["tool"] == "clinic_info" for t in ctx.shared["tools"]):
+    if any(t["tool"] == "clinic_info" for t in ctx.shared["tools"]):
         s.mission("s_first_contact")

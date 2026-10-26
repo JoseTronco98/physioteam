@@ -168,29 +168,61 @@ def _fields(v: dict) -> dict:
     return {f["key"]: f["value"] for f in v.get("fields") or []}
 
 
+def _cell(pairs: list[tuple[str, Any]]) -> Paragraph:
+    """One box of the paper form: 'Label: value' lines, like the clinic's handwritten sheet."""
+    lines = [f"<b>{_esc(k)}:</b> " + (_esc(v) if v not in (None, "") else "<font color='#6E6E73'>—</font>") for k, v in pairs]
+    return Paragraph("<br/>".join(lines), S["cell"])
+
+
+def form(rows: list[list[list[tuple[str, Any]]]], widths: list[list[float]] | None = None) -> list:
+    """Bordered form rows (1-3 boxes per row), stacked like the clinic's evaluation and SOAP sheets."""
+    out = []
+    for i, row in enumerate(rows):
+        ws = (widths[i] if widths and i < len(widths) and widths[i] else [1 / len(row)] * len(row))
+        t = Table([[_cell(c) for c in row]], colWidths=[w * W for w in ws])
+        t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.7, MUTED), ("INNERGRID", (0, 0), (-1, -1), 0.7, MUTED),
+                               ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 5),
+                               ("BOTTOMPADDING", (0, 0), (-1, -1), 6), ("LEFTPADDING", (0, 0), (-1, -1), 6)]))
+        out.append(t)
+    return out
+
+
 def _evaluation(c, d, v, p) -> list:
     f, data = _fields(v), v.get("data") or {}
     pain = data.get("pain") or {}
     hist = data.get("history") or {}
+    life = data.get("lifestyle") or {}
+    palp = data.get("palpation") or {}
     out = _letterhead(c, "Initial physiotherapy evaluation", "Evaluation", v, p, None)
-    out += [H("Reason for consultation"),
-            kv([("Chief complaint", f.get("chief_complaint")), ("Medical diagnosis", f.get("medical_diagnosis")),
-                ("Mechanism and date", f.get("mechanism_and_date")), ("Patient goals", f.get("patient_goals")),
-                ("Occupation", f.get("occupation"))])]
-    out += [H("History"),
-            kv([("Family history", hist.get("family") or f.get("family_history")),
-                ("Medical history", hist.get("personal") or f.get("medical_history")),
-                ("Surgeries", hist.get("surgeries") or f.get("surgeries")), ("Medications", hist.get("medications") or f.get("medications")),
-                ("Allergies", f.get("allergies")), ("Lifestyle", hist.get("lifestyle") or f.get("lifestyle"))])]
-    out += [H("Pain"),
-            table(["Best", "Worst", "Now", "Location", "Pattern"],
-                  [[pain.get("best"), pain.get("worst"), pain.get("now"), pain.get("location") or f.get("pain_location"),
-                    pain.get("pattern") or f.get("pain_pattern")]] if pain else [[None, None, None, f.get("pain_location"), f.get("pain_vas")]],
-                  [0.09, 0.09, 0.09, 0.33, 0.40]),
-            Spacer(1, 3), kv([("Aggravating", f.get("aggravating_factors")), ("Relieving", f.get("relieving_factors"))])]
-    out += [H("Physical examination"),
-            kv([("Posture", f.get("posture")), ("Palpation", f.get("palpation")), ("Sensation", f.get("sensation")),
-                ("Imaging", f.get("imaging"))])]
+    # The clinic's paper form, box by box and in the same order.
+    fam = set(hist.get("family_checklist") or [])
+    items = ["diabetes", "liver disease", "asthma", "endocrine", "hypertension", "cancer", "heart disease", "kidney disease", "mental illness", "other"]
+    checks = " · ".join(f"[{'X' if i in fam else ' '}] {i.capitalize()}" for i in items)
+    def _ten(x: Any) -> str:
+        return (str(x).replace("/10", "").strip() + "/10") if x not in (None, "") else "—"
+    vas = (f"Best {_ten(pain.get('best'))} · Worst {_ten(pain.get('worst'))} · Now {_ten(pain.get('now'))}" if pain
+           else f.get("pain_vas"))
+    out += [Spacer(1, 4)] + form([
+        [[("Patient", p["name"])], [("Age", p["age"])], [("Occupation", f.get("occupation"))]],
+        [[("Medical diagnosis", f.get("medical_diagnosis"))]],
+        [[("Physiotherapy diagnosis", data.get("impression") or f.get("pt_impression"))]],
+        [[("Family history", checks), ("Notes", hist.get("family") or f.get("family_history"))]],
+        [[("Personal history", hist.get("personal") or f.get("medical_history")), ("Previous injuries", f.get("previous_injuries")),
+          ("Surgeries", hist.get("surgeries") or f.get("surgeries")), ("Allergies", f.get("allergies")),
+          ("Peripheral venous insufficiency", f.get("venous_insufficiency")), ("Systemic diseases", f.get("systemic_diseases"))],
+         [("Alcohol", life.get("alcohol")), ("Smoking", life.get("smoking")), ("Exercise (hrs/week)", life.get("exercise_hours_week")),
+          ("Stress", life.get("stress")), ("Sleep", life.get("sleep")), ("Height / weight / BMI", f.get("height_weight"))]
+         if any(life.values()) else [("Lifestyle", f.get("lifestyle")), ("Height / weight / BMI", f.get("height_weight"))]],
+        [[("Mechanism and date of injury", f.get("mechanism_and_date")), ("Patient goals", f.get("patient_goals"))],
+         [("Postural evaluation", f.get("posture")), ("Body chart", f.get("symptom_map"))]],
+        [[("Pain", pain.get("location") or f.get("pain_location")), ("VAS", vas), ("Pattern", pain.get("pattern") or f.get("pain_pattern")),
+          ("Description", f.get("pain_description")), ("Aggravating factors", f.get("aggravating_factors")),
+          ("Relieving factors", f.get("relieving_factors"))],
+         [("Imaging", f.get("imaging")), ("Medications", hist.get("medications") or f.get("medications")),
+          ("Sensation", f.get("sensation"))]],
+        [[("Palpation", None), ("Inflammation", palp.get("inflammation")), ("Scar", palp.get("scar")), ("Joint play", palp.get("joint_play"))]
+         if any(palp.values()) else [("Palpation", f.get("palpation"))]],
+    ], widths=[[0.5, 0.15, 0.35], None, None, None, [0.5, 0.5], [0.5, 0.5], [0.5, 0.5], None])
     if data.get("rom"):
         out += [H("Range of motion"), table(["Joint", "Movement", "Right", "Left", "Normal"],
                                             [[r.get("joint"), r.get("movement"), r.get("right"), r.get("left"), r.get("normal")] for r in data["rom"]],
@@ -202,6 +234,8 @@ def _evaluation(c, d, v, p) -> list:
                                                   [[r.get("muscle"), r.get("right"), r.get("left")] for r in data["strength"]], [0.4, 0.3, 0.3])]
     elif f.get("strength"):
         out += [H("Muscle strength"), P(f.get("strength"))]
+    if f.get("observations"):
+        out += [H("Observations"), P(f.get("observations"))]
     if data.get("special_tests"):
         out += [H("Special tests"), table(["Test", "Right", "Left", "Notes"],
                                           [[r.get("test"), r.get("right"), r.get("left"), r.get("notes")] for r in data["special_tests"]],
@@ -210,10 +244,15 @@ def _evaluation(c, d, v, p) -> list:
         out += [H("Special tests"), P(f.get("special_tests"))]
     if data.get("functional"):
         out += [H("Functional tests"), table(["Test", "Result"], [[r.get("test"), r.get("result")] for r in data["functional"]], [0.35, 0.65])]
-    out += [H("Physiotherapy impression"), boxed([P(data.get("impression") or f.get("pt_impression"))])]
-    out += [H("Problem list")] + bullets(data.get("problems") or ([f["pt_problems"]] if f.get("pt_problems") else []))
+    elif f.get("functional_tests"):
+        out += [H("Functional tests"), P(f.get("functional_tests"))]
+    out += [H("Physiotherapy problems")] + bullets(data.get("problems") or ([f["pt_problems"]] if f.get("pt_problems") else []))
     goals_rows = [["Short term", g] for g in data.get("short_term_goals", [])] + [["Long term", g] for g in data.get("long_term_goals", [])]
-    out += [H("Goals"), table(["Horizon", "Goal"], goals_rows, [0.2, 0.8]) if goals_rows else P(f.get("pt_goals"))]
+    out += [H("Physiotherapy goals"), table(["Horizon", "Goal"], goals_rows, [0.2, 0.8]) if goals_rows else P(f.get("pt_goals"))]
+    out += [H("Physiotherapy treatment"), P(f.get("treatment"))]
+    out += [H("Diagnosis and prognosis (therapist)"),
+            boxed([P("**Physiotherapy diagnosis:** " + str(data.get("impression") or f.get("pt_impression") or "to be completed by the therapist")),
+                   P("**Prognosis:** " + str(data.get("prognosis") or f.get("prognosis") or "to be completed by the therapist"))])]
     out += _signature(c)
     return out
 
@@ -278,10 +317,13 @@ def _progress(c, d, v, p) -> list:
 
 
 def _soap(c, d, v, p) -> list:
+    """Same layout as the clinic's SOAP sheet: Date, then S, O, A, P."""
     f = _fields(v)
     out = _letterhead(c, d["title"], "Session note (SOAP)", v, p, None)
-    for k, lbl in (("subjective", "Subjective"), ("objective", "Objective"), ("assessment", "Assessment"), ("plan", "Plan")):
-        out += [H(lbl), P(f.get(k))]
+    out += [Spacer(1, 4)] + form([
+        [[("Date", f.get("date"))], [("Session", f.get("session"))]],
+        [[("S", f.get("subjective"))]], [[("O", f.get("objective"))]], [[("A", f.get("assessment"))]], [[("P", f.get("plan"))]],
+    ], widths=[[0.6, 0.4]])
     out += _signature(c)
     return out
 

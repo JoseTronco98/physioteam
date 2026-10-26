@@ -125,6 +125,26 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--panel2); }
 .console { display: grid; grid-template-columns: 270px minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
 .console > * { min-width: 0; }
 .missions .group { margin-bottom: 8px; }
+/* story mode */
+.stories .story { border-radius: 14px; padding: 10px 10px 8px; margin-top: 8px; background: rgba(255, 255, 255, .55);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .06) inset; }
+.stories .story.on { background: #fff; box-shadow: 0 0 0 1px rgba(0, 113, 227, .35) inset; }
+.stories .sh { display: flex; gap: 10px; align-items: center; cursor: pointer; }
+.stories .sn { width: 24px; height: 24px; border-radius: 12px; background: #0071E3; color: #fff; font-size: 12px; font-weight: 600;
+  display: grid; place-items: center; flex: none; }
+.stories .sstep { display: flex; gap: 8px; align-items: flex-start; padding: 8px 6px; border-top: 1px solid rgba(0, 0, 0, .05); }
+.stories .sstep .btn.try { padding: 4px 11px; font-size: 12px; min-height: 0; margin-top: 6px; border-radius: 999px; }
+.stories .sstep .btn.try.solid { background: #0071E3; color: #fff; }
+.stories .sstep .btn.try.solid:hover { background: #0077ED; }
+.stories .sstep .tiny { line-height: 1.35; }
+.stories .sstep .sa { width: 22px; text-align: center; flex: none; font-size: 14px; line-height: 20px; }
+.stories .sstep .st { font-size: 13px; font-weight: 500; color: #1D1D1F; }
+.stories .sstep.done .st { color: #6E6E73; }
+.stories .sstep.done .sa { color: #34C759; font-weight: 700; }
+.stories .sstep.next { background: rgba(0, 113, 227, .05); border-radius: 10px; }
+.stories .coverage { margin-top: 8px; max-height: 320px; overflow: auto; }
+.stories .cov { display: flex; flex-direction: column; padding: 6px 4px; border-top: 1px solid rgba(0, 0, 0, .05); cursor: pointer; font-size: 12.5px; }
+.stories .cov:hover { background: rgba(0, 113, 227, .05); }
 .mission { display: flex; gap: 9px; align-items: flex-start; padding: 7px 6px; border-radius: 10px; transition: background .15s; }
 .mission:hover { background: var(--panel2); }
 .mission .chk { flex: 0 0 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--line2); display: inline-flex; align-items: center;
@@ -170,6 +190,9 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--panel2); }
 .msg .body ul, .msg .body ol { margin: 4px 0; padding-left: 20px; }
 .msg .body code { background: rgba(0, 0, 0, .06); padding: 1px 5px; border-radius: 5px; }
 .wjh { margin-top: 6px; font-size: 12px; color: var(--muted); }
+.samplenotes { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 8px 10px; border-radius: 12px;
+  background: rgba(0, 113, 227, .06); border: 1px dashed rgba(0, 113, 227, .35); }
+.samplenotes .tiny { line-height: 1.35; }
 .wjh summary { cursor: pointer; color: var(--dim); list-style: none; } .wjh summary::-webkit-details-marker { display: none; }
 .wjh summary:hover { color: var(--link); }
 .wjh ul { margin: 4px 0 0; padding-left: 18px; }

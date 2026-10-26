@@ -85,7 +85,9 @@
 .gstrip:hover { background: var(--glass-strong); }
 .gstrip-t { writing-mode: vertical-rl; font-size: 12.5px; font-weight: 600; letter-spacing: .02em; color: var(--accent); }
 .gstrip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
-.gfloat { position: absolute; top: 0; z-index: 45; animation: pop .16s var(--ease); background: var(--glass-strong); }
+.gstrip-wrap { z-index: 58; }   /* the open drawer must sit above the product window (composer, sticky headers) */
+.gfloat { position: absolute; top: 0; z-index: 58; animation: pop .16s var(--ease); background: rgba(255, 255, 255, .94);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .18), 0 0 0 .5px rgba(0, 0, 0, .08); max-height: calc(100vh - 90px); }
 .gstrip-wrap.left .gfloat { left: 52px; }
 .gstrip-wrap.right .gfloat { right: 52px; }
 

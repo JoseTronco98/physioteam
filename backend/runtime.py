@@ -110,6 +110,9 @@ class Session:
         return e
 
     def mission(self, mission_id: str) -> None:
+        # Patient missions belong to the persona being played (Sofia's booking is not Valeria's).
+        if mission_id.startswith("s_") and self.c.get("persona_pid") and self.c.get("mode") == "patient":
+            mission_id = f"{self.c['persona_pid']}:{mission_id}"
         if mission_id not in self.c["missions_done"]:
             self.c["missions_done"].append(mission_id)
             self.emit("mission", mission_id=mission_id, done=True)

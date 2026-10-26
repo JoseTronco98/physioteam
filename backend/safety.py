@@ -142,7 +142,7 @@ def check_outbound(text: str) -> str | None:
 SAFE_REPLY = {
     "en": {
         "injection": "I can only help with appointments, prices, directions and your treatment at Movimiento Fisioterapia. I can't change clinic rules or prices. Is there something about your sessions I can help with?",
-        "red_flag": "Thank you for telling me. What you describe needs to be checked by a professional right away, so I've alerted the therapist now. If it gets worse, or you have chest pain or trouble breathing, call 911 or go to the nearest emergency room.",
+        "red_flag": "Thank you for telling us. Lic. Ana has been notified and will contact you personally as soon as possible. If it's an emergency, call 911.",
         "budget": "Our assistant is paused right now. The therapist will reply to you personally as soon as possible.",
     },
     "es": {

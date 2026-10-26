@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -35,6 +35,7 @@ export function Card({ title, sub, children, className, right }: { title?: React
 export const KIND_LABEL: Record<Approval["kind"], string> = {
   booking: "Booking", late_cancel_charge: "Late cancellation", sign_document: "Signature", plan_change: "Plan change",
   outbound_message: "Message to send", invoice_request: "Invoice request", reschedule_batch: "Reschedule", discount: "Discount",
+  waitlist_offer: "Freed slot", weekly_reports: "Doctor reports",
 };
 
 export function PreviewBubble({ p }: { p: NonNullable<Approval["preview"]> }) {
@@ -110,14 +111,35 @@ export function AttachmentView({ a }: { a: Attachment }) {
   return <a className="chip" href={url} target="_blank" rel="noreferrer" style={{ marginTop: 6 }}>📎 {a.name}</a>;
 }
 
-export function MessageList({ thread, me }: { thread: string; me: ChatMessage["role"][] }) {
+function SampleNotesButton({ thread, s }: { thread: string; s: NonNullable<ChatMessage["suggest_attachment"]> }) {
+  const { send, pending } = useStore();
+  const [sent, setSent] = useState(false);
+  return (
+    <div className="samplenotes">
+      <button className="btn sm solid" disabled={sent || pending.has(thread)}
+        onClick={async () => { setSent(true); await send(thread, "Here are my notes from the session.", s.id); }}>
+        {sent ? "Notes sent" : `📎 ${s.label}`}
+      </button>
+      <span className="tiny dim">Demo shortcut: sends a sample note file ({s.name}). In real use the therapist types, dictates or attaches her own.</span>
+    </div>
+  );
+}
+
+const seq = (m: ChatMessage) => Number(m.id.replace(/\D/g, "")) || 0;
+const LEAD_TAG: Record<string, string> = { ops: "Operations Partner", health: "Health Advisor" };
+
+export function MessageList({ thread, me, merge }: { thread: string; me: ChatMessage["role"][]; merge?: string[] }) {
   const { threads, approvals, pending } = useStore();
-  const list = threads[thread] ?? [];
+  const list = useMemo(() => {
+    const own = threads[thread] ?? [];
+    if (!merge?.length) return own;
+    return [...own, ...merge.flatMap((t) => threads[t] ?? [])].sort((a, b) => seq(a) - seq(b));
+  }, [threads, thread, merge]);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { ref.current?.scrollTo({ top: ref.current.scrollHeight, behavior: "smooth" }); }, [list.length, pending.has(thread)]);
   return (
     <div className="scroll" ref={ref}>
-      {list.length === 0 && <div className="empty">No messages yet. Try a mission on the left, or type below.</div>}
+      {list.length === 0 && <div className="empty">No messages yet. Run a story step on the left, or type below.</div>}
       {list.map((m) => {
         const mine = me.includes(m.role);
         const appr = m.approval_id ? approvals.find((a) => a.id === m.approval_id) : undefined;
@@ -129,17 +151,19 @@ export function MessageList({ thread, me }: { thread: string; me: ChatMessage["r
                   {m.role === "doctor" ? `🩺 ${m.author}` : m.author}
                 </span>
                 <span className="t">{fmtTime(m.time)}</span>
+                {merge && m.thread !== thread && LEAD_TAG[m.thread] && <span className="tag">in {LEAD_TAG[m.thread]} chat</span>}
                 {m.blocked && <span className="tag ok">blocked by safety</span>}
               </div>
             )}
             <div className="body"><Md>{m.text}</Md></div>
             {m.attachment && <AttachmentView a={m.attachment} />}
             {appr && <ApprovalCard a={appr} />}
+            {m.suggest_attachment && <SampleNotesButton thread={m.thread} s={m.suggest_attachment} />}
             {!mine && <WhatJustHappened m={m} />}
           </div>
         );
       })}
-      {pending.has(thread) && <div className="thinking">Agents are working</div>}
+      {[thread, ...(merge ?? [])].some((t) => pending.has(t)) && <div className="thinking">Agents are working</div>}
     </div>
   );
 }
@@ -190,7 +214,7 @@ export function FilePicker({ onPick, onClose }: { onPick: (a: Attachment) => voi
       ))}
       <div className="section-title" style={{ marginTop: 8 }}>Or upload</div>
       <button className="btn sm ghost" onClick={() => input.current?.click()}>Choose a file…</button>
-      <input ref={input} type="file" hidden accept="image/*,application/pdf" onChange={async (e) => {
+      <input ref={input} type="file" hidden accept="image/*,application/pdf,.docx,.txt,.md" onChange={async (e) => {
         const f = e.target.files?.[0];
         if (!f) return;
         const a = await run(api.upload(f));

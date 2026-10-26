@@ -1,7 +1,7 @@
 import type {
   AgentInfo, Approval, Appointment, AutopilotStats, BusinessPulse, ChatMessage, ClinicState, ClinicalDoc,
   DailyReport, DemoFile, DocDiff, Doctor, Health, Integration, Lang, Mission, Mode, Patient, PatientFolder,
-  Persona, SafetyEvent, ServerEvent, Spend, Attachment, Conversation, BlockedRange, ActivityRow,
+  Persona, SafetyEvent, ServerEvent, Spend, Attachment, Conversation, BlockedRange, ActivityRow, StoriesPayload,
 } from "./types";
 import { mock } from "./mock";
 
@@ -17,6 +17,11 @@ function newId(): string {
 }
 
 export function sessionId(): string {
+  // ?session=live opens the live WhatsApp clinic in this tab (the demo sandbox stays untouched).
+  const fromUrl = new URLSearchParams(location.search).get("session");
+  if (fromUrl) sessionStorage.setItem(SESSION_KEY, fromUrl);
+  const tab = sessionStorage.getItem(SESSION_KEY);
+  if (tab) return tab;
   let s = localStorage.getItem(SESSION_KEY);
   if (!s) { s = newId(); localStorage.setItem(SESSION_KEY, s); }
   return s;
@@ -87,6 +92,9 @@ export const api = {
   dayBefore: (id: string) => post<ClinicState>(`/personas/${q(id)}/day_before`),
   personas: () => get<Persona[]>("/personas"),
   startPersona: (id: string, lang: Lang) => post<{ thread: string; patient_id: string }>(`/personas/${q(id)}/start`, { lang }),
+  stories: () => get<StoriesPayload>("/stories"),
+  runStory: (sid: string, step: string) => post<{ accepted: boolean; go: string | null; thread: string | null; note: string }>(`/stories/${q(sid)}/${q(step)}/run`),
+  tryMission: (id: string) => post<{ accepted: boolean; go: string | null; thread: string | null; note: string }>(`/missions/${q(id)}/try`),
   sessionHappens: (id: string) => post<{ accepted: boolean }>(`/personas/${q(id)}/session_happens`),
   missions: (mode: "therapist" | "patient") => get<Mission[]>(`/missions?mode=${mode}`),
 

@@ -16,7 +16,7 @@ from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
-from . import agents, approvals, config, exports, runtime, sim, store
+from . import agents, approvals, config, exports, runtime, sim, store, stories, whatsapp
 from .runtime import Session
 
 app = FastAPI(title="PhysioTeam", version=config.VERSION)
@@ -43,7 +43,9 @@ def sess(request: Request) -> Session:
     sid = request.headers.get("X-Session") or request.query_params.get("session") or "anon"
     s = runtime.get_session(sid)
     sim.ensure_demo_attachments(s)
-    if not s.c["events"]:
+    if s.c.get("mode") == "live":
+        s.c["now"] = max(s.c["now"], whatsapp.clinic_now())   # the live clinic runs on the real clock
+    elif not s.c["events"]:
         sim.schedule_week(s)
     return s
 
@@ -61,6 +63,29 @@ def start_job(s: Session, coro_factory) -> str:
 # ---------------------------------------------------------------------------------------
 # Basics
 # ---------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+# Live WhatsApp (Meta Cloud API webhook). Not under /api: Meta calls it, not the web app.
+# ---------------------------------------------------------------------------------------
+@app.get("/webhook/whatsapp")
+async def wa_verify(request: Request):
+    q = request.query_params
+    if q.get("hub.mode") == "subscribe" and q.get("hub.verify_token") == whatsapp.cfg("WHATSAPP_VERIFY_TOKEN") and whatsapp.cfg("WHATSAPP_VERIFY_TOKEN"):
+        return PlainTextResponse(q.get("hub.challenge", ""))
+    raise HTTPException(403, "Verification failed")
+
+
+@app.post("/webhook/whatsapp")
+async def wa_inbound(request: Request):
+    body = await request.body()
+    if not whatsapp.signature_ok(body, request.headers.get("X-Hub-Signature-256")):
+        raise HTTPException(403, "Bad signature")
+    payload = json.loads(body or b"{}")
+    if whatsapp.parse(payload):
+        s = whatsapp.live_session()
+        start_job(s, lambda r: whatsapp.handle(payload, r))
+    return {"ok": True}   # Meta needs a fast 200; the agents answer in the background
+
+
 @app.get("/api/health")
 async def health():
     return {"ok": True, "model": config.MODEL_NAME, "access_required": bool(config.ACCESS_CODE),
@@ -189,6 +214,8 @@ async def send(thread: str, body: SendBody, request: Request):
             # The therapist writes to the patient directly from Clinic Messages (no agent in between).
             seq0 = s.c["seq"]
             s.add_message(thread, "therapist", s.c["clinic"]["therapist"], text)
+            whatsapp.outbound(s, pid, text)   # live clinic: her own words go out on WhatsApp
+            s.c["patients"][pid]["red_flag_answered"] = True
             rid = start_job(s, lambda r: sim.replies_to_outreach(s, seq0, r))
             return {"accepted": True, "run_id": rid}
         rid = start_job(s, lambda r: sim.patient_message(s, pid, text or "(sent a file)", body.attachment_id, run_id=r))
@@ -264,6 +291,39 @@ async def missions(request: Request, mode: str = "therapist"):
     return [m for p in sim.personas_view(s) for m in p["missions"]]
 
 
+@app.get("/api/stories")
+async def stories_list(request: Request):
+    s = sess(request)
+    return {"stories": stories.view(s), "coverage": stories.coverage()}
+
+
+@app.post("/api/stories/{sid}/{step}/run")
+async def story_step(sid: str, step: str, request: Request):
+    s = sess(request)
+    if sid not in stories.BY_ID:
+        raise HTTPException(404, "Unknown story")
+    sim.ensure_demo_attachments(s)
+    go, thread, note = stories.target(sid, step)
+    rid = start_job(s, lambda r: stories.run_step(s, sid, step, r))
+    return {"accepted": True, "run_id": rid, "go": go, "thread": thread, "note": note}
+
+
+@app.post("/api/missions/{mid}/try")
+async def mission_try(mid: str, request: Request):
+    """Build the scenario for a mission that has no typed prompt (events, files, clock jumps)."""
+    s = sess(request)
+    if not s.c.get("events"):
+        sim.schedule_week(s)
+    if not s.c.get("mode"):
+        s.c["mode"] = "therapist" if mid.startswith("t_") else "patient"
+    go, thread, note = sim.SETUP_UI.get(mid, (None, None, "Done. Watch the conversation."))
+    if mid == "t_feedback":
+        a = sim._next_appt(s, lambda x: x["service"] != "evaluation" and x["start"] > s.c["now"])
+        thread = f"wa:{sim.agents.whatsapp_contact(s.c, a['patient_id'])}" if a else None
+    rid = start_job(s, lambda r: sim.try_mission(s, mid, r))
+    return {"accepted": True, "run_id": rid, "go": go, "thread": thread, "note": note}
+
+
 # ---------------------------------------------------------------------------------------
 # Approvals
 # ---------------------------------------------------------------------------------------
@@ -281,12 +341,19 @@ class OptionBody(BaseModel):
 @app.post("/api/approvals/{aid}")
 async def decide(aid: str, body: OptionBody, request: Request):
     s = sess(request)
+    seq0 = s.c["seq"]
     try:
         out = approvals.resolve(s, aid, body.option_id)
     except KeyError:
         raise HTTPException(404, "Unknown approval")
     s.save()
     s.emit("state", state=state(s))
+    if s.c.get("weekly_reports_todo"):
+        start_job(s, lambda r: sim.draft_weekly_reports(s, r))
+    to = s.c["approvals"][aid].get("offered_to")
+    if to and not sim.is_human(s, to):
+        # Simulator: the waitlisted bot patient answers the offer (book on yes, next card on no).
+        start_job(s, lambda r: sim.replies_to_outreach(s, seq0, r, only={to}))
     return out
 
 
@@ -334,7 +401,10 @@ async def patient_folder(pid: str, request: Request):
     p = c["patients"].get(pid)
     if not p:
         raise HTTPException(404, "Unknown patient")
-    docs = [store.doc_view(d) for d in c["documents"].values() if d["patient_id"] == pid]
+    store.feedback_doc(c, pid)
+    mine = [d for d in c["documents"].values() if d["patient_id"] == pid]
+    mine.sort(key=lambda d: (store.DOC_ORDER.get(d["kind"], 9), d["versions"][0]["created"]))
+    docs = [store.doc_view(d, None, c) for d in mine]
     atts = [{k: m["attachment"][k] for k in ("id", "name", "kind", "url")} for m in c["messages"]
             if m.get("attachment") and m["thread"] == f"wa:{pid}"]
     return {"patient": _patient(c, p), "documents": docs,
@@ -349,7 +419,7 @@ async def document(doc_id: str, request: Request, version: int | None = None):
     d = s.c["documents"].get(doc_id)
     if not d:
         raise HTTPException(404, "Unknown document")
-    return store.doc_view(d, version)
+    return store.doc_view(d, version, s.c)
 
 
 @app.get("/api/documents/{doc_id}/diff")
@@ -370,7 +440,7 @@ async def document_export(doc_id: str, request: Request, format: str = "docx"):
     d = s.c["documents"].get(doc_id)
     if not d:
         raise HTTPException(404, "Unknown document")
-    name = f"{s.c['patients'][d['patient_id']]['name'].replace(' ', '_')}_{d['kind']}_v{d['version']}"
+    name = store.doc_filename(s.c, d)
     if format == "html":
         return HTMLResponse(exports.document_html(s.c, d))
     if format == "pdf":
@@ -485,13 +555,31 @@ async def safety_test(kind: str, request: Request):
 # ---------------------------------------------------------------------------------------
 # Files
 # ---------------------------------------------------------------------------------------
+def _notes_to_text(path: Path) -> Path:
+    """Session notes uploaded as Word or text become a UTF-8 .txt next to the original."""
+    if path.suffix.lower() == ".docx":
+        import docx
+        d = docx.Document(str(path))
+        lines = [p.text for p in d.paragraphs]
+        for t in d.tables:
+            for row in t.rows:
+                cells = list(dict.fromkeys(c.text.strip() for c in row.cells if c.text.strip()))
+                lines.append(" | ".join(cells))
+        text = "\n".join(lines)
+    else:
+        text = path.read_bytes().decode("utf-8", errors="replace")
+    out = path.with_suffix(".txt") if path.suffix.lower() != ".txt" else path
+    out.write_text(text.strip(), encoding="utf-8")
+    return out
+
+
 @app.post("/api/uploads")
 async def upload(request: Request, file: UploadFile = File(...)):
     s = sess(request)
     name = Path(file.filename or "upload").name[:80]
     ext = Path(name).suffix.lower()
-    if ext not in (".png", ".jpg", ".jpeg", ".pdf", ".webp"):
-        raise HTTPException(400, "Only images (png, jpg, webp) or PDF")
+    if ext not in (".png", ".jpg", ".jpeg", ".pdf", ".webp", ".docx", ".txt", ".md"):
+        raise HTTPException(400, "Only images (png, jpg, webp), PDF, or session notes (docx, txt)")
     fid = store.new_id("f")
     folder = config.UPLOADS / store.safe(s.id)
     folder.mkdir(parents=True, exist_ok=True)
@@ -501,7 +589,11 @@ async def upload(request: Request, file: UploadFile = File(...)):
     if path.stat().st_size > 8 * 1024 * 1024:
         path.unlink(missing_ok=True)
         raise HTTPException(400, "File too large (max 8 MB)")
-    att = {"id": fid, "name": name, "kind": "pdf" if ext == ".pdf" else "image", "path": str(path), "url": f"/api/files/{fid}"}
+    kind = "pdf" if ext == ".pdf" else "image"
+    if ext in (".docx", ".txt", ".md"):
+        # The therapist's own session notes: stored as plain text, read like the demo notes files.
+        kind, path = "notes", _notes_to_text(path)
+    att = {"id": fid, "name": name, "kind": kind, "path": str(path), "url": f"/api/files/{fid}"}
     s.c["attachments"][fid] = att
     return {k: att[k] for k in ("id", "name", "kind", "url")}
 
@@ -524,7 +616,7 @@ async def get_file(fid: str, request: Request):
 async def demo_files(request: Request):
     sess(request)
     return [{"id": d["id"], "name": d["name"], "kind": d["kind"], "url": f"/api/files/{d['id']}", "description": d["description"]}
-            for d in sim.DEMO_FILES]
+            for d in sim.DEMO_FILES + sim.NOTE_FILES]
 
 
 # ---------------------------------------------------------------------------------------
@@ -605,8 +697,10 @@ async def events(request: Request):
             if q in s.subscribers:
                 s.subscribers.remove(q)
 
+    # no-transform: proxies such as Cloudflare must not compress (and so buffer) the stream.
     return StreamingResponse(gen(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+                             headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no",
+                                      "Content-Encoding": "identity"})
 
 
 # ---------------------------------------------------------------------------------------
@@ -622,5 +716,6 @@ async def spa(full_path: str):
         return FileResponse(target)
     index = dist / "index.html"
     if index.is_file():
-        return FileResponse(index)
+        # never cache the page shell: a reload must always pick up the newest build (assets are content-hashed)
+        return FileResponse(index, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
     return HTMLResponse("<h1>PhysioTeam API is running</h1><p>The front end build (frontend/dist) is missing.</p>")

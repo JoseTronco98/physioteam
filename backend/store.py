@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import uuid
 from datetime import datetime, timedelta
 from typing import Any
@@ -60,6 +61,13 @@ CLINIC = {
         {"id": "shockwave", "name": "Shockwave session", "minutes": 50, "price_mxn": 600,
          "detail": "Radial shockwave for chronic tendon and fascia pain (e.g. plantar fasciitis, tennis elbow)."},
     ],
+    "conditions_treated": [
+        "Orthopedic and sports injuries: sprains, strains, tendinopathies (tennis elbow, plantar fasciitis), low back and neck pain, disc problems",
+        "After surgery or fractures: knee and hip replacement, ACL reconstruction, rotator cuff repair, fractures after the cast or surgery",
+        "Neurological: facial palsy (Bell's palsy), stroke rehabilitation, nerve injuries, balance problems",
+        "Older adults: arthritis, osteoporosis, balance and fall prevention",
+        "Not treated here: emergencies; children under 6; pelvic floor (we refer to a specialist colleague)",
+    ],
     "packages": [
         {"id": "pack10", "name": "10-session package (5 conventional + 5 Redcord or shockwave)", "price_mxn": 5000},
     ],
@@ -97,6 +105,24 @@ _PATIENTS = [
     ("p_ernesto", "Ernesto Gomez", 88, "Lumbar spondylolisthesis with leg pain", "active", "conventional", 6, 12, "d_salinas", [(2, 16), (4, 16)], 0, ["household_gomez"]),
     ("p_marta", "Marta Gomez", 79, "Knee osteoarthritis, both", "active", "conventional", 3, 8, "d_ortiz", [(2, 17)], 0, ["household_gomez"]),
     ("p_elena", "Elena Rios", 66, "Osteoporosis, balance and fall prevention", "active", "conventional", 5, 10, None, [(3, 16), (5, 10)], 0, []),
+    # Story 1 patient: back from a trip, nothing booked this week yet.
+    ("p_valentina", "Valentina Arce", 33, "Right ankle sprain grade II, returning to running", "active", "conventional", 3, 10, "d_medina", [], 0, []),
+]
+
+# New patients with their first visit (evaluation) booked this week. Each has sample therapist notes
+# in demo_files/notes so the Health Advisor can draft the evaluation and plan during the demo.
+# id, name, age, condition, referring doctor, (weekday, hour), usual service after the evaluation
+_NEW_EVALS = [
+    ("p_andres", "Andres Valdez", 36, "Right shoulder pain, suspected subacromial impingement (house painter)", "d_medina", (0, 15), "conventional"),
+    ("p_gabriela", "Gabriela Soto", 29, "Left anterior knee pain after increasing running mileage", None, (0, 17), "conventional"),
+    ("p_roberto", "Roberto Aguilar", 58, "Low back pain with left sciatica for 3 weeks", "d_salinas", (1, 15), "redcord"),
+    ("p_fernanda", "Fernanda Leal", 42, "Neck pain with tension headaches, desk worker", None, (1, 18), "conventional"),
+    ("p_miguel", "Miguel Castro", 67, "Left total hip replacement, 3 weeks after surgery", "d_ortiz", (2, 14), "conventional"),
+    ("p_patricia", "Patricia Morales", 50, "Left frozen shoulder for 4 months", None, (3, 14), "conventional"),
+    ("p_javier", "Javier Ortega", 24, "Right ankle sprain grade II playing soccer, 10 days ago", "d_medina", (3, 15), "conventional"),
+    ("p_laura", "Laura Benitez", 38, "Right wrist and hand tingling, suspected carpal tunnel (typist)", None, (3, 17), "conventional"),
+    ("p_oscar", "Oscar Villa", 71, "Parkinson's disease: balance and gait problems", "d_salinas", (4, 14), "redcord"),
+    ("p_daniela", "Daniela Paz", 45, "Right Achilles tendinopathy, recreational runner", "d_medina", (4, 18), "shockwave"),
 ]
 
 # Contacts who write on WhatsApp but are not (yet) patients: personas and simulator bots.
@@ -110,28 +136,35 @@ _CONTACTS = [
     ("p_rosa", "Rosa Cruz", 61, "Facial palsy, left side, started 3 days ago", "inquiry", "d_salinas"),
 ]
 
+# Same sections and order as the clinic's paper evaluation form (template: orthopedic evaluation).
 EVAL_FIELDS = [
     ("occupation", "Occupation"), ("medical_diagnosis", "Medical diagnosis"), ("referring_doctor", "Referring doctor"),
+    ("pt_impression", "Physiotherapy diagnosis (therapist)"),
     ("chief_complaint", "Chief complaint"), ("mechanism_and_date", "Mechanism and date of injury"),
-    ("family_history", "Family history"), ("medical_history", "Medical history (diabetes, hypertension, heart, other)"),
-    ("previous_injuries", "Previous injuries"), ("surgeries", "Surgeries"), ("allergies", "Allergies"),
-    ("medications", "Medications"), ("lifestyle", "Lifestyle (smoking, alcohol, exercise hrs/week, stress, sleep)"),
-    ("height_weight", "Height / weight"), ("can_climb_stairs", "Can climb stairs"),
-    ("pain_location", "Pain location and irradiation"), ("pain_vas", "Pain VAS best / worst / now (0-10)"),
-    ("pain_pattern", "Pain pattern (constant, intermittent; increasing, decreasing)"),
+    ("family_history", "Family history (diabetes, liver disease, asthma, endocrine, hypertension, cancer, heart, kidney, mental illness, other)"),
+    ("medical_history", "Personal medical history"), ("previous_injuries", "Previous injuries"), ("surgeries", "Surgeries"),
+    ("allergies", "Allergies"), ("venous_insufficiency", "Peripheral venous insufficiency"), ("systemic_diseases", "Systemic diseases"),
+    ("lifestyle", "Lifestyle (alcohol, smoking, exercise hrs/week, stress, sleep)"),
+    ("height_weight", "Height / weight / BMI"), ("can_climb_stairs", "Can climb stairs"),
+    ("patient_goals", "Patient goals"),
+    ("pain_location", "Pain location and radiation"), ("pain_vas", "Pain VAS best / worst / now (0-10)"),
+    ("pain_pattern", "Pain pattern (constant, continuous, periodic; decreasing, increasing, static)"),
+    ("pain_description", "Pain description"),
     ("aggravating_factors", "Aggravating factors"), ("relieving_factors", "Relieving factors"),
-    ("posture", "Posture observation"), ("palpation", "Palpation (inflammation, scar, joint play)"),
-    ("rom", "Range of motion"), ("strength", "Muscle strength (0-5)"), ("sensation", "Sensation"),
-    ("special_tests", "Special tests"), ("functional_tests", "Functional tests"), ("imaging", "Imaging"),
-    ("patient_goals", "Patient goals"), ("pt_impression", "Physiotherapy impression (therapist)"),
-    ("pt_problems", "Physiotherapy problems"), ("pt_goals", "Physiotherapy goals"), ("treatment", "Treatment"),
+    ("posture", "Postural evaluation"), ("symptom_map", "Body chart (pain, neuralgia, radiation, tingling or numbness)"),
+    ("imaging", "Imaging"), ("medications", "Medications"), ("sensation", "Sensation"),
+    ("palpation", "Palpation (inflammation, scar, joint play)"),
+    ("rom", "Range of motion"), ("strength", "Muscle strength (0-5)"), ("observations", "Observations"),
+    ("special_tests", "Special tests"), ("functional_tests", "Functional tests"),
+    ("pt_problems", "Physiotherapy problems"), ("pt_goals", "Physiotherapy goals"), ("treatment", "Physiotherapy treatment"),
+    ("prognosis", "Prognosis (therapist)"),
 ]
 PLAN_FIELDS = [
     ("total_sessions", "Total sessions"), ("frequency", "Frequency"), ("therapy_mix", "Therapy mix"),
     ("focus", "Focus"), ("goals", "Goals"), ("next_session", "Next session"), ("total_cost_mxn", "Total cost (MXN)"),
     ("payment_terms", "Payment terms"), ("review_point", "Review point"),
 ]
-SOAP_FIELDS = [("date", "Date"), ("subjective", "S: Subjective"), ("objective", "O: Objective"),
+SOAP_FIELDS = [("date", "Date"), ("session", "Session"), ("subjective", "S: Subjective"), ("objective", "O: Objective"),
                ("assessment", "A: Assessment"), ("plan", "P: Plan")]
 
 _PLAN_SEEDS = {
@@ -162,7 +195,7 @@ def _patient(pid, name, age, condition, status, service="conventional", done=0, 
     return {"id": pid, "name": name, "age": age, "condition": condition, "status": status,
             "service": service, "sessions_done": done, "plan_total": total, "referring_doctor_id": doctor,
             "balance_mxn": balance, "flags": list(flags or []), "lang": lang,
-            "household_id": "h_gomez" if pid in ("p_ernesto", "p_marta", "p_teresa") else None,
+            "household_id": "h_gomez" if pid in ("p_ernesto", "p_marta", "p_teresa") else ("h_cruz" if pid in ("p_valeria", "p_rosa") else None),
             "intake": {}, "restrictions": "", "home_program": ""}
 
 
@@ -173,6 +206,9 @@ def new_clinic(session: str) -> dict:
         "tour_done": False, "autoplay": False, "caching": True,
         "clinic": copy.deepcopy(CLINIC), "patients": {}, "doctors": {d["id"]: dict(d) for d in DOCTORS},
         "appointments": {}, "blocked": [], "waitlist": ["p_paola", "p_luis"], "documents": {},
+        "waitlist_prefs": {"p_paola": {"days": [3], "from": 12, "to": 20, "note": "Thursday afternoons (a second weekly session)"},
+                           "p_luis": {"days": [0, 1, 2, 3, 4], "from": 18, "to": 20, "note": "an extra session after work (18:00 or later)"}},
+        "offers": [], "recovered": [],
         "ledger": [], "approvals": {}, "messages": [], "safety": [], "alerts": [], "outbox": [],
         "attachments": {}, "missions_done": [], "events": [], "fired": [], "seq": 0,
         "spend": {"product": {}, "simulator": {}, "usd": 0.0},
@@ -190,6 +226,11 @@ def new_clinic(session: str) -> dict:
             c["ledger"].append({"id": new_id("l"), "time": "2026-10-23T18:00", "patient_id": pid, "kind": "charge",
                                 "amount_mxn": bal, "note": "Unpaid session(s) from last week", "method": None})
         _seed_docs(c, p)
+    for (pid, name, age, cond, doc, (wd, hr), service) in _NEW_EVALS:
+        p = _patient(pid, name, age, cond, "new", service, 0, None, doc)
+        c["patients"][pid] = p
+        add_appointment(c, pid, _week_dt(wd, hr), "evaluation", status="booked", session_number=1)
+    _schedule_ahead(c)
     for (pid, name, age, cond, status, doc) in _CONTACTS:
         c["patients"][pid] = _patient(pid, name, age, cond, status, doctor=doc)
     c["patients"]["p_diego"]["restrictions"] = "No loaded squats or deadlifts; light machines only; always breathe (no Valsalva); swimming preferred."
@@ -211,17 +252,17 @@ _PAST_CHATS = {
                 ("2026-10-21T10:12", "patient", None, "C, thank you!"),
                 ("2026-10-22T13:05", "agent", AI, "Your exercises for home:\n1. Pendulum swings 2x10\n2. Wand-assisted flexion 3x10\n3. Scapular squeezes 3x10, 3 times a day"),
                 ("2026-10-22T19:40", "patient", None, "Thanks! The wand one hurts a bit at the top, is that ok?"),
-                ("2026-10-22T19:41", "agent", AI, "Thanks for telling us. I've passed it to Lic. Ana, she'll reply personally. Until then, stay in the range that doesn't hurt.")],
-    "p_diego": [("2026-10-20T09:30", "patient", None, "Oye una pregunta, ¿cuánto te debo?"),
-                ("2026-10-20T09:31", "agent", AI, "Hola Diego, su saldo pendiente es de MXN 600 por la sesión del jueves pasado. ¿Le comparto los datos para transferencia?"),
-                ("2026-10-20T09:40", "patient", None, "Sí porfa, y la factura de este mes"),
-                ("2026-10-20T09:41", "agent", AI, "Con gusto. La terapeuta le comparte los datos bancarios. Para la factura necesito su RFC y correo; la contadora la emite dentro del mismo mes."),
-                ("2026-10-22T17:55", "patient", None, "No voy a poder llegar hoy, no me dejan salir de la oficina 😞"),
-                ("2026-10-22T17:56", "agent", AI, "Gracias por avisar, Diego. Como faltan menos de 24 h, la terapeuta decide si se cobra. ¿Le funciona mañana viernes a las 14:00 para reponerla?"),
-                ("2026-10-22T18:10", "patient", None, "Mañana no puedo, nos vemos el martes")],
-    "p_daniel": [("2026-10-23T10:00", "agent", AUTO, "¡Hola Daniel! Le recordamos su sesión el lunes 26 a las 12:00. Responda C para confirmar."),
-                 ("2026-10-23T10:30", "patient", None, "Confirmo. ¿Me puede mandar recibo de la última sesión para el seguro?"),
-                 ("2026-10-23T10:31", "agent", AI, "Claro, Daniel. Ya pedí el recibo a la terapeuta; le llegará por correo. Tiene un saldo de MXN 400 pendiente.")],
+                ("2026-10-22T19:41", "agent", AI, "Thanks for telling us. I've passed it to Lic. Ana; she'll look at it with you at Monday's session.")],
+    "p_diego": [("2026-10-20T09:30", "patient", None, "Hey quick question, how much do I owe you?"),
+                ("2026-10-20T09:31", "agent", AI, "Hi Diego, your balance is MXN 600 for last Thursday's session. Would you like the transfer details?"),
+                ("2026-10-20T09:40", "patient", None, "Yes please, and this month's invoice"),
+                ("2026-10-20T09:41", "agent", AI, "Of course. Lic. Ana will share the bank details. For the invoice I need your tax ID (RFC) and email; the accountant issues it within the same month."),
+                ("2026-10-22T17:55", "patient", None, "I can't make it today, they won't let me leave the office 😞"),
+                ("2026-10-22T17:56", "agent", AI, "Thanks for letting us know, Diego. Since it's less than 24 hours away, Lic. Ana decides whether it's charged. Would tomorrow, Friday at 14:00, work to make it up?"),
+                ("2026-10-22T18:10", "patient", None, "Can't tomorrow, see you Tuesday")],
+    "p_daniel": [("2026-10-23T10:00", "agent", AUTO, "Hello Daniel! Reminder: your session is Monday 26 at 12:00. Reply C to confirm."),
+                 ("2026-10-23T10:30", "patient", None, "Confirmed. Could you send me a receipt for the last session for my insurance?"),
+                 ("2026-10-23T10:31", "agent", AI, "Sure, Daniel. I've asked for the receipt; it will reach you by email. You have a pending balance of MXN 400.")],
     "p_carmen": [("2026-10-21T11:00", "agent", AUTO, "Hello Carmen, we missed you today at 12:00. Is everything ok? Would you like to rebook?"),
                  ("2026-10-23T11:00", "agent", AUTO, "Hello Carmen, we missed you again today. Your hip program works best with regular sessions. Reply here when you'd like a new time.")],
     "p_teresa": [("2026-10-21T16:20", "patient", None, "Good afternoon! Dad is coming today at 4, mom is staying home with a cold"),
@@ -241,7 +282,7 @@ def _seed_chats(c: dict) -> None:
             c["messages"].append({"id": f"m{c['seq']}", "thread": f"wa:{pid}", "role": role,
                                   "author": author or p["name"], "text": text, "time": t,
                                   **({"agent": "ops_partner" if author == AUTO else "patient_success"} if role == "agent" else {})})
-    c["persona_lang"] = {"p_diego": "es", "p_daniel": "es"}
+    c["persona_lang"] = {}
 
 
 _BASELINES = {
@@ -287,8 +328,157 @@ _SOAPS = {
 }
 
 
+def weekly_pattern(slots: list[tuple[int, int]]) -> tuple[list[int], int]:
+    """Every patient comes 3x/week: Mon/Wed/Fri or Tue/Thu/Sat, at their usual hour."""
+    days = [0, 2, 4] if any(wd in (0, 2, 4) for wd, _ in slots) else [1, 3, 5]
+    return days, slots[0][1] if slots else 12
+
+
+def _hour_on(day: datetime, hour: int) -> int:
+    return min(max(hour, 9), 12) if day.weekday() == 5 else hour
+
+
+AGENDA_WEEKS = 5          # this week + the next 4
+WEEK1_KEEP_FREE = 6       # leave room in the demo week for new bookings and the waitlist stories
+
+
+def nearest_free(c: dict, day: datetime, hour: int) -> str | None:
+    hours = open_hours(day)
+    for h in sorted(hours, key=lambda x: (abs(x - hour), x)):
+        slot = ts(day.replace(hour=h, minute=0))
+        if not busy_at(c, slot):
+            return slot
+    return None
+
+
+def book_recurring(c: dict, pid: str, slots: list[tuple[int, int]] | None = None, start_week: int = 0,
+                   status: str = "booked") -> list[dict]:
+    """Book the rest of a patient's plan at 3x/week, from start_week to the end of the 5-week agenda."""
+    p = c["patients"][pid]
+    total = p.get("plan_total") or 0
+
+    def upcoming() -> list[dict]:
+        return [a for a in c["appointments"].values() if a["patient_id"] == pid and a["service"] != "evaluation"
+                and a["status"] in ("booked", "confirmed", "pending_approval")]
+
+    left = total - (p.get("sessions_done") or 0) - len(upcoming())
+    if not slots:
+        mine = sorted(c["appointments"].values(), key=lambda a: a["start"])
+        first = next((a for a in mine if a["patient_id"] == pid), None)
+        slots = [(dt(first["start"]).weekday(), dt(first["start"]).hour)] if first else [(0, 12)]
+    days, hour = weekly_pattern(slots)
+    # The plan's frequency decides how many days a week ("2x/week" -> 2); the clinic standard is 3.
+    plan = find_doc(c, pid, "treatment_plan")
+    m = re.search(r"(\d)\s*x", str((plan and {x["key"]: x["value"] for x in plan["versions"][-1]["fields"]}.get("frequency")) or ""))
+    per_week = min(3, max(1, int(m.group(1)))) if m else 3
+    days = [days[0], days[2]] if per_week == 2 else days[:per_week]
+    monday = dt(WEEK_START).replace(hour=0, minute=0)
+    soonest = ts(dt(c["now"]) + timedelta(hours=24))
+    out = []
+    for w in range(start_week, AGENDA_WEEKS):
+        lo, hi = ts(monday + timedelta(days=7 * w)), ts(monday + timedelta(days=7 * w + 7))
+        week_have = [a for a in upcoming() if lo <= a["start"] < hi]
+        for wd in days:
+            if left <= 0 or len(week_have) >= per_week:
+                break
+            day = monday + timedelta(days=7 * w + wd)
+            if any(a["start"][:10] == ts(day)[:10] for a in week_have):
+                continue
+            if w == 0 and len(free_slots(c, ts(day), days=6 - wd, limit=99)) <= WEEK1_KEEP_FREE:
+                break
+            slot = nearest_free(c, day, _hour_on(day, hour))
+            if not slot or slot <= soonest:
+                continue
+            a = add_appointment(c, pid, slot, p["service"], status=status)
+            week_have.append(a)
+            out.append(a)
+            left -= 1
+    # number the sessions in order
+    k = p.get("sessions_done") or 0
+    for a in sorted([x for x in c["appointments"].values() if x["patient_id"] == pid and x["service"] != "evaluation"
+                     and x["status"] in ("booked", "confirmed", "pending_approval")], key=lambda x: x["start"]):
+        k += 1
+        a["session_number"] = k if k <= total else None
+        a["plan_total"] = total
+    return out
+
+
+def _schedule_ahead(c: dict) -> None:
+    for row in _PATIENTS:
+        pid, slots = row[0], row[9]
+        if slots and c["patients"][pid]["status"] in ("active", "at_risk"):
+            # People on the waitlist keep this week as it is (they are waiting for a better slot).
+            book_recurring(c, pid, slots, start_week=1 if pid in c["waitlist"] else 0)
+
+
+def past_session_dates(slots: list[tuple[int, int]], n: int) -> list[str]:
+    """The n sessions before this week, 3x/week, oldest first."""
+    days, hour = weekly_pattern(slots)
+    out, d = [], dt("2026-10-24T00:00")
+    while len(out) < n:
+        if d.weekday() in days:
+            out.append(ts(d.replace(hour=_hour_on(d, hour))))
+        d -= timedelta(days=1)
+    return sorted(out)
+
+
+_HISTORY_PATH = config.BACKEND / "clinical_history.json"
+HISTORY = json.loads(_HISTORY_PATH.read_text(encoding="utf-8")) if _HISTORY_PATH.is_file() else {}
+
+_PRAISE = ["Clear exercises, I feel looser.", "Very attentive, left with less pain.", "Great session, tough but good.",
+           "Lic. Ana explained my progress.", "Good pace, felt listened to."]
+_GRIPES = ["We started a bit late.", "I'd like more time on exercises.", "The waiting area was cold."]
+
+
+def _past_feedback(c: dict, pid: str, when: str, n: int) -> None:
+    """Every past session was followed by the 1-5 question (fictional answers: mostly 5s)."""
+    h = sum(map(ord, pid + when))
+    stars = 3 if h % 13 == 0 else (4 if h % 3 == 0 else 5)
+    c.setdefault("feedback", []).append({"patient_id": pid, "appointment_id": None, "session": n, "asked": when,
+                                         "rated": when, "rating": stars, "status": "done",
+                                         "comment": (_GRIPES if stars <= 3 else _PRAISE)[h % (3 if stars <= 3 else 5)]})
+
+
+def feedback_doc(c: dict, pid: str) -> dict | None:
+    """One living file per patient with every post-session rating and comment."""
+    rows = [f for f in c.get("feedback", []) if f["patient_id"] == pid and f.get("rating")]
+    if not rows:
+        return None
+    avg = sum(f["rating"] for f in rows) / len(rows)
+    body = (f"**Average rating: {avg:.1f} / 5** over {len(rows)} session(s).\n\n| Date | Session | Rating | Comment |\n|---|---|---|---|\n"
+            + "\n".join(f"| {nice(f.get('rated') or f['asked'])[:10]} | {f.get('session') or '-'} | {f['rating']} / 5 "
+                        f"| {(f.get('comment') or '').replace('|', '/')} |" for f in sorted(rows, key=lambda x: x.get("rated") or x["asked"])))
+    d = find_doc(c, pid, "feedback")
+    if d:
+        v = d["versions"][-1]
+        v.update(body_md=body, created=c["now"])
+        return d
+    return add_document(c, pid, "feedback", "Patient feedback", body_md=body, author="patient_success", status="signed",
+                        created=rows[0].get("rated") or rows[0]["asked"])
+
+
+def _seed_from_history(c: dict, p: dict, h: dict) -> None:
+    pid = p["id"]
+    add_document(c, pid, "evaluation", "Initial evaluation", h["evaluation"]["fields"], author="therapist", status="signed",
+                 created=h["eval_date"], data=h["evaluation"]["data"])
+    add_document(c, pid, "treatment_plan", "Treatment plan", h["plan"]["fields"], author="therapist", status="signed",
+                 created=ts(dt(h["eval_date"]) + timedelta(minutes=50)), data=h["plan"]["data"])
+    for s in h["soaps"]:
+        add_document(c, pid, "soap", f"SOAP · session {s['session']}",
+                     _fields(SOAP_FIELDS, {"date": nice(s["date"]), "session": f"{s['session']} of {p['plan_total']}",
+                                           "subjective": s["subjective"], "objective": s["objective"],
+                                           "assessment": s["assessment"], "plan": s["plan"]}, "therapist"),
+                     author="therapist", status="signed", created=s["date"])
+        _past_feedback(c, pid, s["date"], s["session"])
+    feedback_doc(c, pid)
+    p["home_program"] = h.get("home_program") or p.get("home_program", "")
+
+
 def _seed_docs(c: dict, p: dict) -> None:
     pid = p["id"]
+    if pid in HISTORY:
+        _seed_from_history(c, p, HISTORY[pid])
+        return
     fields = {k: None for k, _ in EVAL_FIELDS}
     fields.update({"chief_complaint": p["condition"], "medical_diagnosis": p["condition"],
                    "referring_doctor": c["doctors"].get(p["referring_doctor_id"] or "", {}).get("name"),
@@ -444,9 +634,34 @@ def find_doc(c, pid: str, kind: str) -> dict | None:
     return docs[-1] if docs else None
 
 
-def doc_view(d: dict, version: int | None = None) -> dict:
+DOC_TYPE = {"evaluation": "Evaluation", "treatment_plan": "TreatmentPlan", "soap": "SOAP", "progress_report": "ProgressReport",
+            "discharge_summary": "DischargeSummary", "feedback": "Feedback", "home_program": "HomeProgram",
+            "imaging_summary": "ImagingSummary", "invoice_request": "InvoiceRequest", "doctor_letter": "DoctorLetter"}
+DOC_ORDER = {"evaluation": 0, "treatment_plan": 1, "soap": 2, "progress_report": 3, "doctor_letter": 3, "discharge_summary": 4,
+             "home_program": 5, "imaging_summary": 6, "feedback": 7}
+
+
+def doc_filename(c: dict, d: dict, version: int | None = None) -> str:
+    """Clinic naming rule: yymmdd_PatientName_TypeReport (date of the session or of the document)."""
+    import unicodedata
+    v = d["versions"][(version or d["version"]) - 1]
+    when = v["created"]
+    if d["kind"] == "soap":
+        f = {x["key"]: x["value"] for x in v.get("fields") or []}
+        try:
+            when = ts(datetime.strptime(f"{(f.get('date') or '').split(', ')[0].split(' ', 1)[1]} 2026", "%b %d %Y"))
+        except (ValueError, IndexError):
+            pass
+    name = c["patients"].get(d["patient_id"], {}).get("name", "Patient")
+    name = "".join(w.capitalize() for w in unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().split())
+    kind = DOC_TYPE.get(d["kind"], d["kind"].title().replace("_", ""))
+    return f"{when[2:4]}{when[5:7]}{when[8:10]}_{name}_{kind}"
+
+
+def doc_view(d: dict, version: int | None = None, c: dict | None = None) -> dict:
     v = d["versions"][(version or d["version"]) - 1]
     return {"id": d["id"], "patient_id": d["patient_id"], "kind": d["kind"], "title": d["title"],
+            "filename": doc_filename(c, d, version) if c else None,
             "version": v["version"], "status": v["status"],
             "versions": [{k: x[k] for k in ("version", "created", "author", "status", "reason")} for x in d["versions"]],
             "fields": v["fields"], "body_md": v.get("body_md"), "data": v.get("data") or {}}

@@ -170,7 +170,12 @@ export function AccessScreen() {
       <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Access code" onKeyDown={(e) => e.key === "Enter" && (e.currentTarget.nextElementSibling as HTMLButtonElement)?.click()} />
       <button className="gbtn solid" onClick={async () => {
         setAccessCode(code);
-        try { await api.state(); codeAccepted(); } catch { setErr("That code didn't work. Check the README."); }
+        try {
+          await api.state();
+          codeAccepted();
+          // The live event stream was opened before the code existed (and refused): reload so it reconnects with it.
+          window.location.reload();
+        } catch { setErr("That code didn't work. Check the README."); }
       }}>Enter</button>
       {err && <p className="small bad">{err}</p>}
     </div>

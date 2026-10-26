@@ -143,6 +143,12 @@ function DocView({ doc, rate, patient, doctor }: { doc: ClinicalDoc; rate: numbe
   );
 }
 
+const GROUP_LABEL: Record<string, string> = {
+  evaluation: "Evaluation (first visit)", treatment_plan: "Treatment plan", soap: "Session notes (SOAP)",
+  progress_report: "Progress reports", discharge_summary: "Discharge", home_program: "Home program",
+  imaging_summary: "Studies", feedback: "Patient feedback",
+};
+
 export function Folder() {
   const { run, state, docVersion, focusPatient, setFocusPatient } = useStore();
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -161,6 +167,10 @@ export function Folder() {
     });
     void run(api.doctors()).then((d) => d && setDoctors(d));
   }, [run, docVersion]); // eslint-disable-line
+  // A folder asked for from elsewhere (agenda, a story step, a deep link) wins, even after the list has loaded.
+  useEffect(() => {
+    if (focusPatient && patients.some((x) => x.id === focusPatient)) { setPid(focusPatient); setFocusPatient(null); }
+  }, [focusPatient, patients]); // eslint-disable-line
   useEffect(() => {
     if (!pid) return;
     void run(api.folder(pid)).then((f) => {
@@ -208,13 +218,21 @@ export function Folder() {
               <div className="section-title" style={{ marginTop: 10 }}>Folder</div>
               <div className="doclist">
                 {folder.documents.length === 0 && <div className="empty">No documents yet. They appear as the agents work.</div>}
-                {folder.documents.map((d) => (
-                  <div key={d.id} className={cx("d", d.id === docId && "on")} onClick={() => setDocId(d.id)}>
-                    <span>{d.title}</span>
+                {folder.documents.map((d, i) => (
+                  <div key={d.id} style={{ display: "contents" }}>
+                  {(i === 0 || folder.documents[i - 1].kind !== d.kind) && (
+                    <div className="tiny dim" style={{ margin: "8px 2px 2px", textTransform: "uppercase", letterSpacing: ".04em" }}>
+                      {GROUP_LABEL[d.kind] ?? d.kind.replace("_", " ")}
+                      {d.kind === "soap" ? ` · ${folder.documents.filter((x) => x.kind === "soap").length} sessions` : ""}
+                    </div>
+                  )}
+                  <div className={cx("d", d.id === docId && "on")} onClick={() => setDocId(d.id)}>
+                    <span>{d.filename ?? d.title}</span>
                     <span className="row" style={{ gap: 4 }}>
                       {d.versions.length > 1 && <span className="tag pk">v{d.version}</span>}
                       <span className={cx("tag", d.status === "signed" ? "ok" : "warn")}>{d.status}</span>
                     </span>
+                  </div>
                   </div>
                 ))}
               </div>

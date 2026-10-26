@@ -28,11 +28,12 @@ export interface ChatMessage {
   attachment?: Attachment;
   lang?: Lang;
   blocked?: boolean;
+  suggest_attachment?: { id: string; name: string; label: string };  // demo: one-click sample notes
 }
 
 export type ApprovalKind =
   | "booking" | "late_cancel_charge" | "sign_document" | "plan_change" | "outbound_message"
-  | "invoice_request" | "reschedule_batch" | "discount";
+  | "invoice_request" | "reschedule_batch" | "discount" | "waitlist_offer" | "weekly_reports";
 
 export interface Approval {
   id: string;
@@ -40,6 +41,7 @@ export interface Approval {
   title: string;
   detail: string;
   patient_id?: string;
+  related_patient_ids?: string[];   // waitlist_offer: who cancelled + who is offered
   created: string;
   status: "pending" | "approved" | "rejected" | "waived";
   options: { id: string; label: string; primary?: boolean }[];
@@ -75,12 +77,12 @@ export interface DocField { key: string; label: string; value: string | null; so
 
 export type DocKind =
   | "evaluation" | "soap" | "treatment_plan" | "home_program" | "progress_report"
-  | "discharge_summary" | "imaging_summary" | "invoice_request";
+  | "discharge_summary" | "imaging_summary" | "invoice_request" | "feedback";
 
 export interface ClinicalDoc {
   id: string; patient_id: string;
   kind: DocKind;
-  title: string; version: number; status: "draft" | "signed" | "superseded"; versions: DocVersion[];
+  title: string; filename?: string | null; version: number; status: "draft" | "signed" | "superseded"; versions: DocVersion[];
   fields: DocField[];
   body_md?: string;
   data?: Record<string, unknown>;   // structured tables (rom, strength, outcomes, phases, goals...)
@@ -94,7 +96,12 @@ export interface PatientFolder { patient: Patient; documents: ClinicalDoc[]; led
 
 export interface Doctor { id: string; name: string; specialty: string; referrals_this_month: number; active_patients: number }
 
-export interface Mission { id: string; group: string; title: string; try_prompt?: string; done: boolean; hint?: string }
+export interface StoryStep { id: string; actor: "patient" | "doctor" | "you" | "clinic"; title: string; watch: string; decide: boolean; done: boolean }
+export interface Story { id: string; title: string; who: string; blurb: string; steps: StoryStep[]; done: number }
+export interface CoverageRow { feature: string; story: string; step: string; story_title: string; step_title: string }
+export interface StoriesPayload { stories: Story[]; coverage: CoverageRow[] }
+
+export interface Mission { id: string; group: string; title: string; try_prompt?: string; setup?: boolean; done: boolean; hint?: string }
 
 export interface Persona {
   id: string; patient_id: string; title: string; blurb: string; starts_as: string;

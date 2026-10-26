@@ -5,8 +5,8 @@ const TILES: { mode: Mode; icon: string; bg: string; title: string; text: string
     points: ["Two leads, four specialists", "You approve what matters", "Safe and on budget by design"], go: "Take a look" },
   { mode: "patient", icon: "💬", bg: "#E8F7EC", title: "Be the patient.", text: "Chat on WhatsApp. Watch the clinic move with every message.",
     points: ["Book, cancel late, report pain", "See the therapist's phone light up", "Five patient stories to try"], go: "Open the phone" },
-  { mode: "therapist", icon: "🩺", bg: "#EFEEFF", title: "Run the clinic.", text: "A full week, simulated. Patients and doctors write in as the clock moves.",
-    points: ["24 things to try, from agenda to money", "Approvals, reports, profitability", "See the team room at work"], go: "Open the clinic" },
+  { mode: "therapist", icon: "🩺", bg: "#EFEEFF", title: "Run the clinic.", text: "Be Lic. Ana. Five short stories show everything, one click per step.",
+    points: ["Booking, doctors, a new patient's month", "Safety, and your results after a week", "Or free play: let the week flow"], go: "Open the clinic" },
   { mode: "deploy", icon: "🚀", bg: "#FFF4E5", title: "Take it live.", text: "What it takes to run this in a real clinic. And what it costs.",
     points: ["WhatsApp Business, step by step", "Risks, and how they're handled", "What comes next"], go: "Read more" },
 ];

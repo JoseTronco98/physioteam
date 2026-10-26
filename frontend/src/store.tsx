@@ -241,10 +241,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [addActivity, toast, upsertMessage, feedFrom]);
 
+  const lastEventAt = useRef(Date.now());
+  const threadsRef = useRef<string[]>([]);
+  useEffect(() => { threadsRef.current = Object.keys(threads); }, [threads]);
+
   useEffect(() => {
     if (!ready) return;
-    return subscribe(onEvent, setConnected);
+    return subscribe((e) => { lastEventAt.current = Date.now(); onEvent(e); }, setConnected);
   }, [ready, onEvent]);
+
+  // Safety net for proxies that hold back the live stream (e.g. some tunnels): when no event has
+  // arrived for a while, poll the same data the stream would have pushed.
+  useEffect(() => {
+    if (!ready) return;
+    const id = window.setInterval(async () => {
+      if (document.hidden || Date.now() - lastEventAt.current < 8000) return;
+      try {
+        const [s, ap] = await Promise.all([api.state(), api.approvals()]);
+        setState(s); setApprovals(ap);
+        // the three team chats always (their messages arrive unasked, e.g. "You're with Javier now"), plus any chat open
+        const want = Array.from(new Set(["team", "ops", "health", ...threadsRef.current]));
+        const lists = await Promise.all(want.map((t) => api.messages(t).then((m) => [t, m] as const)));
+        setThreads((cur) => {
+          const next = { ...cur };
+          let newest: ChatMessage | null = null;
+          for (const [t, msgs] of lists) {
+            if ((cur[t]?.length ?? 0) !== msgs.length) {
+              next[t] = msgs;
+              const last = msgs[msgs.length - 1];
+              if (last && (!newest || last.id > newest.id)) newest = last;
+              if (last && (last.role === "agent" || last.role === "system"))
+                setPending((p) => { if (!p.has(t)) return p; const c = new Set(p); c.delete(t); return c; });
+            }
+          }
+          if (newest) { setLastMessage(newest); setEventTick((n) => n + 1); setDocVersion((v) => v + 1); }
+          return next;
+        });
+        void loadFeed();
+      } catch { /* next tick */ }
+    }, 4000);
+    return () => window.clearInterval(id);
+  }, [ready, loadFeed]);
 
   const loadThread = useCallback(async (thread: string) => {
     try {

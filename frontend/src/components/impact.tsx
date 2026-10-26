@@ -32,7 +32,7 @@ export function ClinicImpact({ patientId, name }: { patientId: string; name: str
     return () => window.clearTimeout(t);
   }, [patientId, eventTick, docVersion, run, state?.now]);
 
-  const myApprovals = approvals.filter((a) => a.patient_id === patientId).slice(0, 4);
+  const myApprovals = approvals.filter((a) => a.patient_id === patientId || a.related_patient_ids?.includes(patientId)).slice(0, 4);
   const myAlerts = alerts.filter((a) => a.patient_id === patientId);
   const evalDoc = folder?.documents.find((d) => d.kind === "evaluation");
   const filled = evalDoc?.fields.filter((f) => f.value) ?? [];

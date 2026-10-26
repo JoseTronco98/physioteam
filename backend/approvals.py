@@ -4,12 +4,32 @@ cannot approve its own request)."""
 from __future__ import annotations
 
 from . import store
-from .agents import patient_lang, public_approval, send_to_patient
+from .agents import make_offer, patient_lang, public_approval, send_to_patient
 from .runtime import Session
 
 
 def _say(s: Session, pid: str, en: str, es: str) -> None:
     send_to_patient(s, pid, es if patient_lang(s.c, pid) == "es" else en, author="Movimiento Fisioterapia (AI assistant)")
+
+
+def _book_plan(s: Session, p: dict) -> None:
+    """An approved plan books its sessions (3x/week, at the patient's first-visit hour) for the next weeks
+    and the patient gets the schedule; existing future sessions are kept."""
+    c = s.c
+    week = max(0, (store.dt(c["now"]) - store.dt(store.WEEK_START)).days // 7)
+    if p["status"] == "new":
+        p["status"] = "active"
+    booked = store.book_recurring(c, p["id"], start_week=week)
+    if not booked:
+        return
+    first = p["name"].split()[0]
+    when = "\n".join(f"- {store.nice(a['start'])}" for a in booked[:6])
+    more = f"\n…and {len(booked) - 6} more, 3 times a week." if len(booked) > 6 else ""
+    _say(s, p["id"], f"Hi {first}, your treatment plan is ready and your sessions are booked:\n{when}{more}\nYou'll get a reminder the day before each one.",
+         f"Hola {first}, su plan está listo y sus sesiones quedaron agendadas:\n{when}{more}")
+    s.add_message("ops", "system", "Operations Partner",
+                  f"Booked **{len(booked)} sessions** for {p['name']} (3x/week) from the approved plan, first on {store.nice(booked[0]['start'])}.",
+                  agent="ops_partner")
 
 
 def resolve(s: Session, approval_id: str, option: str, by: str = "therapist") -> dict:
@@ -71,6 +91,7 @@ def resolve(s: Session, approval_id: str, option: str, by: str = "therapist") ->
                 for ap in c["appointments"].values():
                     if ap["patient_id"] == pid:
                         ap["plan_total"] = p["plan_total"]
+                _book_plan(s, p)
             s.emit("doc_updated", doc_id=d["id"], patient_id=d["patient_id"], version=d["version"])
             s.mission("t_sign")
         a["status"] = "approved" if option == "approve" else "rejected"
@@ -91,6 +112,22 @@ def resolve(s: Session, approval_id: str, option: str, by: str = "therapist") ->
                     _say(s, pid, f"One last favour: this 1-minute anonymous survey helps us improve: {c['clinic']['survey_url']}",
                          f"Un último favor: esta encuesta anónima de 1 minuto nos ayuda a mejorar: {c['clinic']['survey_url']}")
                     s.mission("t_discharge")
+        a["status"] = "approved" if option == "approve" else "rejected"
+
+    elif kind == "waitlist_offer":
+        cands = pl.get("candidates") or []
+        to = cands[1] if option == "offer_next" and len(cands) > 1 else (cands[0] if cands else None)
+        if option in ("offer", "offer_next") and to and not store.busy_at(c, pl["slot"]):
+            make_offer(s, to, pl["slot"], cands, pl.get("declined"))
+            a["status"] = "approved"
+            a["offered_to"] = to
+        else:
+            s.add_message("ops", "system", "Operations Partner", f"OK, **{store.nice(pl['slot'])}** stays free.", agent="ops_partner")
+            a["status"] = "rejected"
+
+    elif kind == "weekly_reports":
+        if option == "approve":
+            c["weekly_reports_todo"] = list(pl.get("patients") or [])
         a["status"] = "approved" if option == "approve" else "rejected"
 
     elif kind == "invoice_request":
@@ -116,7 +153,7 @@ def auto_therapist(s: Session) -> int:
     for a in list(s.c["approvals"].values()):
         if a["status"] != "pending":
             continue
-        option = "approve"
+        option = "offer" if a["kind"] == "waitlist_offer" else "approve"
         if a["kind"] == "late_cancel_charge":
             p = s.c["patients"].get(a.get("patient_id"), {})
             option = "charge" if "waived_once" in p.get("flags", []) else "waive"
