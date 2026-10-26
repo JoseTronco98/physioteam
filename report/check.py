@@ -30,6 +30,8 @@ with sync_playwright() as p:
 
 pdf = pdfium.PdfDocument(str(pdf_path))
 print("report pages:", len(pdf))
+for old in PREV.glob("page_*.png"):
+    old.unlink()
 for i in range(len(pdf)):
     pdf[i].render(scale=0.9).to_pil().save(PREV / f"page_{i + 1:02d}.png")
 

@@ -8,12 +8,14 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
 <style>
   :root { --g:#29BA74; --gd:#197A56; --gdd:#03522D; --gl:#DCF3E7; --gll:#F1FAF5; --ink:#212427; --muted:#5F6368; --line:#D9D9D9; --soft:#F2F2F2;
-          --r-main-font: Arial, "Helvetica Neue", Helvetica, sans-serif; --r-heading-font: Arial, Helvetica, sans-serif;
+          --r-main-font: "Segoe UI", Arial, Helvetica, sans-serif; --r-heading-font: "Segoe UI", Arial, Helvetica, sans-serif;
           --r-main-color: #212427; --r-heading-color: #03522D; --r-link-color: #197A56; --r-main-font-size: 24px;
           --r-heading-text-transform: none; --r-heading-letter-spacing: 0; --r-heading-font-weight: 700; }
   .reveal .slides { text-align: left; }
   .reveal .slides section { height: 100%; padding: 0 !important; }
-  .reveal h2 { font-size: 1.32em; line-height: 1.18; margin: 0 0 .45em; color: var(--gdd); }
+  .reveal h2 { font-size: 1.22em; line-height: 1.2; margin: 0 0 .5em; color: #fff; padding: 16px 22px 18px;
+               background: linear-gradient(100deg, #0B2E22 0%, #03522D 62%, #197A56 100%); border-bottom: 6px solid var(--g); }
+  .q { font-weight: 700; color: var(--gdd); font-size: .62em; margin: 0 0 6px; }
   .tracker { display: flex; gap: 4px; margin: 0 0 .5em; }
   .tracker span { flex: 1; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: #9a9a9a; border-top: 4px solid var(--soft); padding-top: 3px; }
   .tracker span.on { color: var(--gdd); border-top-color: var(--g); font-weight: 700; }
@@ -22,7 +24,7 @@
   .reveal li + li { margin-top: .45em; }
   .reveal ul { margin: 0 0 0 1em; font-size: .78em; } .reveal li { margin: .22em 0; line-height: 1.32; }
   .reveal p { font-size: .8em; line-height: 1.35; margin: .3em 0; }
-  .reveal table { font-size: .52em; border-collapse: collapse; width: 100%; margin: 0; }
+  .reveal table { font-size: .6em; border-collapse: collapse; width: 100%; margin: 0; }
   .reveal table th { background: var(--gdd); color: #fff; border: none; padding: 5px 7px; font-weight: 700; }
   .reveal table td { border-bottom: 1px solid var(--line); padding: 4px 7px; }
   .reveal table td.c, .reveal table th.c { text-align: center; } .reveal td.n, .reveal th.n { text-align: right; }
@@ -31,13 +33,13 @@
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
   .g64 { display: grid; grid-template-columns: 1.55fr 1fr; gap: 24px; align-items: start; }
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: .3em 0; }
-  .kpi { border-top: 4px solid var(--g); background: var(--soft); padding: 10px 12px; }
+  .kpi { border-top: 5px solid var(--g); background: #F1FAF5; padding: 10px 12px; }
   .kpi b { display: block; font-size: 1.45em; color: var(--gdd); line-height: 1.1; }
   .kpi span { display: block; font-size: .5em; color: var(--muted); line-height: 1.3; }
-  .take { border-left: 6px solid var(--g); background: var(--gll); padding: 8px 14px; font-size: .64em; line-height: 1.35; margin-top: .5em; }
+  .take { border-top: 5px solid var(--g); background: #DCF3E7; padding: 8px 14px; font-size: .64em; line-height: 1.35; margin-top: .5em; }
   .take b { color: var(--gdd); }
   .reveal img.shot { border: 1px solid var(--line); margin: 0; width: 100%; }
-  .cap { font-size: .48em; color: var(--muted); margin-top: 3px; }
+  .cap { font-size: .55em; color: var(--muted); margin-top: 3px; }
   .num { color: var(--g); }
   .cover { background: linear-gradient(90deg, var(--gdd) 0 62%, var(--g) 62% 100%); color: #fff; height: 100%; position: relative; }
   .cover .in { position: absolute; left: 60px; top: 150px; right: 520px; }
@@ -128,7 +130,10 @@
 <section>
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span class="on">Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
   <h2>Two leads she talks to, four specialists they delegate to, and a code layer with the last word</h2>
-  <div style="max-width:1000px;margin:0 auto">⟦DIAGRAM⟧</div>
+  <div class="g64">
+    <div>⟦DIAGRAM⟧</div>
+    <div><img class="shot" src="shots/trace1_combo.png" alt="Traced run" style="width:auto;max-width:100%;max-height:400px"><div class="cap">One traced run, step by step: Valentina asks for a session → Patient Success reads her profile, finds a slot, holds the booking → approval card for the therapist (log, newest first)</div></div>
+  </div>
   <div class="src">PydanticAI agents on gpt-6-luna · 58 tools · one hand-off per request · 10 requests / 12 tool calls per run. Source: backend/agents.py, safety.py, approvals.py.</div><div class="pg">5</div>
 </section>
 
@@ -168,6 +173,10 @@
       </table>
     </div>
   </div>
+  <div class="grid2" style="margin-top:14px">
+    <div><img class="shot" src="shots/wa_tom.png" alt="Prompt injection blocked" style="width:auto;max-width:100%;max-height:205px"><div class="cap">Prompt injection blocked in code before any model saw it</div></div>
+    <div><img class="shot" src="shots/wa_hector.png" alt="Red flag escalated" style="width:auto;max-width:100%;max-height:205px"><div class="cap">Red flag: no advice; the therapist is alerted and answers herself</div></div>
+  </div>
   <div class="src">Source: tools/eval_quality.py (⟦Q_MEASURED⟧); tests/stories_run.py.</div><div class="pg">7</div>
 </section>
 
@@ -176,16 +185,10 @@
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span class="on">Cost</span><span>Impact</span><span>Next</span></div>
   <h2>A whole clinic week costs ⟦K_WEEK_USD⟧; 10,000 clinics would cost ⟦K_10K_MONTH⟧ a month</h2>
   <div class="grid2">
-    <div>⟦WEEK_TABLE_SHORT⟧</div>
-    <div>
-      ⟦SCALE_TABLE⟧
-      <ul style="font-size:.6em;margin-top:.6em">
-        <li>⟦K_CACHED⟧% of input tokens from cache (~59% saving, same output in the A/B)</li>
-        <li>⟦K_CODE_MSGS_SHORT⟧ of outgoing patient messages sent by code at zero tokens</li>
-        <li>Typical run: ⟦T1_USD⟧ (a booking) to ⟦T2_USD⟧ (evaluation + plan)</li>
-      </ul>
-    </div>
+    <div><p class="q">Measured week, by agent</p>⟦WEEK_TABLE_SHORT⟧<p class="q" style="margin-top:12px">Per clinic and at scale</p>⟦SCALE_TABLE⟧</div>
+    <div><img class="shot" src="shots/costs_tokens.png" alt="Costs and safety screen" style="width:auto;max-width:100%;max-height:390px"><div class="cap">The app meters itself: spend per agent against the caps, and token counts as reported by the API</div></div>
   </div>
+  <div class="take"><b>How cost was cut without hurting quality:</b> ⟦K_CACHED⟧% of input from cache (~59% saving, same output in the A/B) · ⟦K_CODE_MSGS_SHORT⟧ of outgoing patient messages sent by code at zero tokens · typical run ⟦T1_USD⟧ (a booking) to ⟦T2_USD⟧ (evaluation + plan)</div>
   <div class="src">Measured on every model call at course prices ($0.10 / $0.01 cached / $0.50 output per M tokens); simulator bots excluded. Source: tools/report_data.py, ⟦D_MEASURED⟧.</div><div class="pg">8</div>
 </section>
 
@@ -194,7 +197,7 @@
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span class="on">Impact</span><span>Next</span></div>
   <h2>She gets back about 2 hours a day (~40 a month) and refilled slots, for less than one session's price a year</h2>
   <div class="grid2">
-    <div>⟦TIME_CHART⟧</div>
+    <div><img class="shot" src="shots/usertest_approval.png" alt="User test"><div class="cap">The user test: a practicing physical therapist runs PhysioTeam on her own computer (recorded call; the demo video)</div></div>
     <div>⟦SLIDE_IMPACT⟧</div>
   </div>
   <div class="kpis" style="margin-top:.8em">
@@ -218,6 +221,12 @@
     <tr><td>No calendar or invoicing integration</td><td>Google Calendar, CFDI invoicing</td></tr>
     <tr><td>Health-data rules</td><td>Privacy notice and consent in the first message; processing agreement</td></tr>
   </table>
+  <div class="kpis" style="margin-top:.6em">
+    <div class="kpi"><b>5</b><span>one-click stories, one per real situation</span></div>
+    <div class="kpi"><b>45</b><span>capabilities, each mapped to a story step</span></div>
+    <div class="kpi"><b>⟦K_STORIES_USD⟧</b><span>AI cost to play all 51 steps</span></div>
+    <div class="kpi"><b>~3 min</b><span>to run it locally: Python only</span></div>
+  </div>
   <div class="take"><b>Try it:</b> <a href="https://github.com/JoseTronco98/physioteam" style="color:inherit;text-decoration:underline">https://github.com/JoseTronco98/physioteam</a> (⟦REPO_VISIBILITY⟧) · <code>pip install -r requirements.txt</code> · <code>python run.py</code> → Therapist → Stories. Every number here regenerates with <code>tools/report_data.py</code> and <code>tools/eval_quality.py</code> (report, Appendix A).</div>
   <div class="src">Source: report section 7 and Appendix A.</div><div class="pg">10</div>
 </section>

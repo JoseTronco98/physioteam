@@ -263,7 +263,7 @@ def main():
     # user test
     vis = UT.get("repo_visibility", "public")
     if UT.get("quote"):
-        # the recorded session with the therapist (the demo video is a 3-minute cut of it)
+        # the recorded session with the therapist (the demo video is this session, edited)
         ut_rows = [("Her three biggest admin pains", UT.get("pains")),
                    ("A booking over WhatsApp, by hand", UT.get("booking_by_hand")),
                    ("Time those three tasks take her today", UT.get("admin_time")),
