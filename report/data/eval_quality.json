@@ -1,0 +1,462 @@
+{
+ "model": "gpt-6-luna",
+ "measured": "2026-10-26 01:43",
+ "summary": {
+  "evaluation": {
+   "documents": 10,
+   "completeness_pct": 93.2,
+   "grounded_numbers_pct": 96.0,
+   "numbers_checked": 176,
+   "median_seconds": 15.4,
+   "avg_usd": 0.001347,
+   "dx_captured": 9,
+   "prognosis_captured": 10
+  },
+  "soap": {
+   "documents": 20,
+   "completeness_pct": 93.8,
+   "grounded_numbers_pct": 96.1,
+   "numbers_checked": 229,
+   "median_seconds": 3.4,
+   "avg_usd": 0.00027
+  }
+ },
+ "rows": [
+  {
+   "note": "session_2026-10-26_11h_lucia.txt",
+   "kind": "soap",
+   "patient": "Lucia Mendez",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 9,
+   "grounded": 9,
+   "ungrounded": [],
+   "seconds": 5.1,
+   "usd": 0.00026
+  },
+  {
+   "note": "session_2026-10-26_12h_daniel.txt",
+   "kind": "soap",
+   "patient": "Daniel Ochoa",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 11,
+   "grounded": 11,
+   "ungrounded": [],
+   "seconds": 3.9,
+   "usd": 0.000285
+  },
+  {
+   "note": "session_2026-10-26_13h_marisol.txt",
+   "kind": "soap",
+   "patient": "Marisol Pena",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 13,
+   "grounded": 13,
+   "ungrounded": [],
+   "seconds": 2.9,
+   "usd": 0.000276
+  },
+  {
+   "note": "first_visit_2026-10-26_15h_andres.txt",
+   "kind": "evaluation",
+   "patient": "Andres Valdez",
+   "filled": 36,
+   "total": 38,
+   "numbers_in_draft": 19,
+   "grounded": 18,
+   "ungrounded": [
+    "25.9"
+   ],
+   "seconds": 15.4,
+   "usd": 0.001656,
+   "dx": true,
+   "prognosis": true,
+   "rom_rows": 6,
+   "strength_rows": 4,
+   "tests_rows": 5
+  },
+  {
+   "note": "first_visit_2026-10-26_17h_gabriela.txt",
+   "kind": "evaluation",
+   "patient": "Gabriela Soto",
+   "filled": 35,
+   "total": 38,
+   "numbers_in_draft": 16,
+   "grounded": 15,
+   "ungrounded": [
+    "135"
+   ],
+   "seconds": 15.8,
+   "usd": 0.0013,
+   "dx": true,
+   "prognosis": true,
+   "rom_rows": 4,
+   "strength_rows": 3,
+   "tests_rows": 5
+  },
+  {
+   "note": "session_2026-10-26_18h_ana.txt",
+   "kind": "soap",
+   "patient": "Ana Paula Torres",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 14,
+   "grounded": 12,
+   "ungrounded": [
+    "3",
+    "12"
+   ],
+   "seconds": 3.6,
+   "usd": 0.000262
+  },
+  {
+   "note": "session_2026-10-26_19h_ricardo.txt",
+   "kind": "soap",
+   "patient": "Ricardo Fuentes",
+   "filled": 3,
+   "total": 4,
+   "numbers_in_draft": 11,
+   "grounded": 11,
+   "ungrounded": [],
+   "seconds": 2.8,
+   "usd": 0.000243
+  },
+  {
+   "note": "session_2026-10-27_11h_jorge.txt",
+   "kind": "soap",
+   "patient": "Jorge Salas",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 12,
+   "grounded": 12,
+   "ungrounded": [],
+   "seconds": 27.1,
+   "usd": 0.000281
+  },
+  {
+   "note": "session_2026-10-27_12h_carmen.txt",
+   "kind": "soap",
+   "patient": "Carmen Vidal",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 10,
+   "grounded": 10,
+   "ungrounded": [],
+   "seconds": 3.2,
+   "usd": 0.000257
+  },
+  {
+   "note": "session_2026-10-27_13h_paola.txt",
+   "kind": "soap",
+   "patient": "Paola Ibarra",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 14,
+   "grounded": 13,
+   "ungrounded": [
+    "30"
+   ],
+   "seconds": 3.1,
+   "usd": 0.000282
+  },
+  {
+   "note": "first_visit_2026-10-27_15h_roberto.txt",
+   "kind": "evaluation",
+   "patient": "Roberto Aguilar",
+   "filled": 35,
+   "total": 38,
+   "numbers_in_draft": 18,
+   "grounded": 17,
+   "ungrounded": [
+    "27.4"
+   ],
+   "seconds": 14.5,
+   "usd": 0.001214,
+   "dx": true,
+   "prognosis": true,
+   "rom_rows": 4,
+   "strength_rows": 4,
+   "tests_rows": 3
+  },
+  {
+   "note": "session_2026-10-27_17h_hector.txt",
+   "kind": "soap",
+   "patient": "Hector Ruiz",
+   "filled": 3,
+   "total": 4,
+   "numbers_in_draft": 8,
+   "grounded": 7,
+   "ungrounded": [
+    "8"
+   ],
+   "seconds": 2.9,
+   "usd": 0.000236
+  },
+  {
+   "note": "first_visit_2026-10-27_18h_fernanda.txt",
+   "kind": "evaluation",
+   "patient": "Fernanda Leal",
+   "filled": 36,
+   "total": 38,
+   "numbers_in_draft": 18,
+   "grounded": 16,
+   "ungrounded": [
+    "1.65",
+    "25.0"
+   ],
+   "seconds": 19.5,
+   "usd": 0.00157,
+   "dx": true,
+   "prognosis": true,
+   "rom_rows": 4,
+   "strength_rows": 4,
+   "tests_rows": 3
+  },
+  {
+   "note": "session_2026-10-27_19h_diego.txt",
+   "kind": "soap",
+   "patient": "Diego Herrera",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 14,
+   "grounded": 14,
+   "ungrounded": [],
+   "seconds": 4.5,
+   "usd": 0.000315
+  },
+  {
+   "note": "session_2026-10-28_11h_luis.txt",
+   "kind": "soap",
+   "patient": "Luis Mora",
+   "filled": 3,
+   "total": 4,
+   "numbers_in_draft": 11,
+   "grounded": 11,
+   "ungrounded": [],
+   "seconds": 2.5,
+   "usd": 0.000239
+  },
+  {
+   "note": "session_2026-10-28_12h_daniel.txt",
+   "kind": "soap",
+   "patient": "Daniel Ochoa",
+   "filled": 3,
+   "total": 4,
+   "numbers_in_draft": 10,
+   "grounded": 10,
+   "ungrounded": [],
+   "seconds": 2.3,
+   "usd": 0.000236
+  },
+  {
+   "note": "first_visit_2026-10-28_14h_miguel.txt",
+   "kind": "evaluation",
+   "patient": "Miguel Castro",
+   "filled": 35,
+   "total": 38,
+   "numbers_in_draft": 16,
+   "grounded": 16,
+   "ungrounded": [],
+   "seconds": 15.2,
+   "usd": 0.001241,
+   "dx": false,
+   "prognosis": true,
+   "rom_rows": 4,
+   "strength_rows": 4,
+   "tests_rows": 1
+  },
+  {
+   "note": "session_2026-10-28_16h_ernesto.txt",
+   "kind": "soap",
+   "patient": "Ernesto Gomez",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 7,
+   "grounded": 7,
+   "ungrounded": [],
+   "seconds": 3.4,
+   "usd": 0.000291
+  },
+  {
+   "note": "session_2026-10-28_17h_marta.txt",
+   "kind": "soap",
+   "patient": "Marta Gomez",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 12,
+   "grounded": 12,
+   "ungrounded": [],
+   "seconds": 5.3,
+   "usd": 0.000275
+  },
+  {
+   "note": "session_2026-10-28_19h_ricardo.txt",
+   "kind": "soap",
+   "patient": "Ricardo Fuentes",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 11,
+   "grounded": 8,
+   "ungrounded": [
+    "2",
+    "8",
+    "12"
+   ],
+   "seconds": 3.3,
+   "usd": 0.000238
+  },
+  {
+   "note": "session_2026-10-29_11h_lucia.txt",
+   "kind": "soap",
+   "patient": "Lucia Mendez",
+   "filled": 3,
+   "total": 4,
+   "numbers_in_draft": 12,
+   "grounded": 12,
+   "ungrounded": [],
+   "seconds": 3.7,
+   "usd": 0.00026
+  },
+  {
+   "note": "session_2026-10-29_12h_carmen.txt",
+   "kind": "soap",
+   "patient": "Carmen Vidal",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 11,
+   "grounded": 9,
+   "ungrounded": [
+    "2",
+    "8"
+   ],
+   "seconds": 3.0,
+   "usd": 0.000283
+  },
+  {
+   "note": "session_2026-10-29_13h_marisol.txt",
+   "kind": "soap",
+   "patient": "Marisol Pena",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 13,
+   "grounded": 13,
+   "ungrounded": [],
+   "seconds": 3.4,
+   "usd": 0.000292
+  },
+  {
+   "note": "first_visit_2026-10-29_14h_patricia.txt",
+   "kind": "evaluation",
+   "patient": "Patricia Morales",
+   "filled": 35,
+   "total": 38,
+   "numbers_in_draft": 23,
+   "grounded": 23,
+   "ungrounded": [],
+   "seconds": 11.7,
+   "usd": 0.001091,
+   "dx": true,
+   "prognosis": true,
+   "rom_rows": 14,
+   "strength_rows": 4,
+   "tests_rows": 3
+  },
+  {
+   "note": "first_visit_2026-10-29_15h_javier.txt",
+   "kind": "evaluation",
+   "patient": "Javier Ortega",
+   "filled": 35,
+   "total": 38,
+   "numbers_in_draft": 17,
+   "grounded": 15,
+   "ungrounded": [
+    "1.78",
+    "24.0"
+   ],
+   "seconds": 18.9,
+   "usd": 0.00154,
+   "dx": true,
+   "prognosis": true,
+   "rom_rows": 4,
+   "strength_rows": 4,
+   "tests_rows": 3
+  },
+  {
+   "note": "session_2026-10-29_16h_elena.txt",
+   "kind": "soap",
+   "patient": "Elena Rios",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 13,
+   "grounded": 13,
+   "ungrounded": [],
+   "seconds": 4.1,
+   "usd": 0.000308
+  },
+  {
+   "note": "first_visit_2026-10-29_17h_laura.txt",
+   "kind": "evaluation",
+   "patient": "Laura Benitez",
+   "filled": 36,
+   "total": 38,
+   "numbers_in_draft": 15,
+   "grounded": 15,
+   "ungrounded": [],
+   "seconds": 13.1,
+   "usd": 0.001231,
+   "dx": true,
+   "prognosis": true,
+   "rom_rows": 10,
+   "strength_rows": 4,
+   "tests_rows": 3
+  },
+  {
+   "note": "session_2026-10-29_18h_diego.txt",
+   "kind": "soap",
+   "patient": "Diego Herrera",
+   "filled": 4,
+   "total": 4,
+   "numbers_in_draft": 13,
+   "grounded": 13,
+   "ungrounded": [],
+   "seconds": 3.9,
+   "usd": 0.00029
+  },
+  {
+   "note": "first_visit_2026-10-30_14h_oscar.txt",
+   "kind": "evaluation",
+   "patient": "Oscar Villa",
+   "filled": 35,
+   "total": 38,
+   "numbers_in_draft": 14,
+   "grounded": 14,
+   "ungrounded": [],
+   "seconds": 15.3,
+   "usd": 0.001317,
+   "dx": true,
+   "prognosis": true,
+   "rom_rows": 4,
+   "strength_rows": 3,
+   "tests_rows": 2
+  },
+  {
+   "note": "first_visit_2026-10-30_18h_daniela.txt",
+   "kind": "evaluation",
+   "patient": "Daniela Paz",
+   "filled": 36,
+   "total": 38,
+   "numbers_in_draft": 20,
+   "grounded": 20,
+   "ungrounded": [],
+   "seconds": 16.5,
+   "usd": 0.001312,
+   "dx": true,
+   "prognosis": true,
+   "rom_rows": 10,
+   "strength_rows": 4,
+   "tests_rows": 3
+  }
+ ]
+}

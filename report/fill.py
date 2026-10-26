@@ -215,7 +215,7 @@ def main():
     basis = "stated assumptions"
     if UT.get("minutes"):
         m.update(UT["minutes"])
-        basis = "the therapist's own timings from the user test"
+        basis = UT.get("minutes_basis", "the therapist's own timings from the user test")  # read as "minutes per task are <basis>"
     if UT.get("review_minutes"):
         review.update(UT["review_minutes"])
     msgs = wa["inbound"] - 2 * wa["feedback_ratings"]   # feedback replies only exist because of the system
@@ -263,25 +263,24 @@ def main():
     # user test
     vis = UT.get("repo_visibility", "public")
     if UT.get("quote"):
-        ut_rows = [("Admin hours a week today (her estimate)", UT.get("admin_hours_per_week")),
-                   ("3 patient replies: by hand vs with PhysioTeam", f'{UT.get("time_by_hand_messages")} vs {UT.get("time_team_messages")}'),
-                   ("Quality of the assistant's replies (1-5)", UT.get("rating_messages")),
-                   ("Evaluation: her usual time vs reviewing the draft", f'{UT.get("time_by_hand_eval_min")} min vs {UT.get("time_review_eval")}'),
-                   ("Evaluation draft usable with few corrections (1-5)", UT.get("rating_eval")),
-                   ("Would send the doctor report as drafted", UT.get("doctor_report_ok")),
-                   ("Hours a week she thinks it would save", UT.get("hours_saved_estimate")),
-                   ("Willing to pay per month (MXN)", UT.get("willingness_to_pay_mxn"))]
-        user_test = ('<div class="ex"><div class="et"><span class="n">Exhibit 18a</span>User test: a practicing physical therapist (solo clinic, Mexico), 40 minutes, screen shared</div>'
+        # the recorded session with the therapist (the demo video is a 3-minute cut of it)
+        ut_rows = [("Her three biggest admin pains", UT.get("pains")),
+                   ("A booking over WhatsApp, by hand", UT.get("booking_by_hand")),
+                   ("Time those three tasks take her today", UT.get("admin_time")),
+                   ("What she ran in PhysioTeam", UT.get("ran")),
+                   ("Not measured in this session", UT.get("not_measured"))]
+        user_test = ('<div class="ex"><div class="et"><span class="n">Exhibit 18a</span>'
+                     f'User test: {html.escape(UT.get("session", ""))}</div>'
                      '<table><tr><th>Measure</th><th>Result</th></tr>' +
-                     "".join(f"<tr><td>{a}</td><td><b>{html.escape(str(b))}</b></td></tr>" for a, b in ut_rows if b not in (None, "")) +
+                     "".join(f"<tr><td>{a}</td><td><b>{html.escape(str(b))}</b></td></tr>" for a, b in ut_rows if b) +
                      "</table>"
-                     f'<div class="take"><b>"{html.escape(UT["quote"])}"</b> - the therapist who tested PhysioTeam</div>'
-                     f'<p><b>What she would change:</b> {html.escape(UT.get("changes", ""))} <b>Liked most:</b> {html.escape(UT.get("liked_most", ""))} '
-                     f'<b>Liked least:</b> {html.escape(UT.get("liked_least", ""))}</p></div>')
-        one_line = f'A practicing therapist tested it: "{html.escape(UT["quote"])}"'
+                     f'<div class="take"><b>"{html.escape(UT["quote_time"])}"</b><br><b>"{html.escape(UT["quote"])}"</b>'
+                     ' - the therapist who tested PhysioTeam</div></div>')
+        one_line = f'A practicing therapist ran it on a recorded call (the demo video): "{html.escape(UT["quote_short"])}"' 
         slide_imp = (f'<div class="take"><b>"{html.escape(UT["quote"])}"</b><br>- the physical therapist who tested it</div>'
-                     f'<ul style="font-size:.6em"><li>Evaluation: {UT.get("time_by_hand_eval_min")} min by hand vs {UT.get("time_review_eval")} reviewing the draft</li>'
-                     f'<li>Reply quality {UT.get("rating_messages")}/5 · draft usability {UT.get("rating_eval")}/5</li>'
+                     f'<ul style="font-size:.6em"><li>Her estimate today: <b>~2 h a day</b> on booking, reports and finances '
+                     f'= <b>10 h a week ≈ 40 h a month</b>; our measured-volume model frees {saved:.0f} h a week</li>'
+                     f'<li>Booking by hand: {html.escape(UT.get("booking_by_hand", ""))}; with PhysioTeam: one tap on an approval card</li>'
                      f'<li>Refilled slots: MXN {rec_mxn:,} in the measured week</li></ul>')
     else:
         user_test = ('<div class="pending"><b>User test (to be completed with the therapist):</b> 40-minute session, screen shared and recorded. '
@@ -310,10 +309,11 @@ def main():
         "X_BASE_CHART": base_chart, "TIME_TABLE": "\n".join(trows), "TIME_CHART": time_chart, "X_TIME_BASIS": basis,
         "X_INBOUND": str(wa["inbound"]), "X_SESSIONS": str(wa["sessions_done"]),
         "X_RECOVERED_MXN": f"{rec_mxn:,}", "X_RECOVERED_MONTH": f"{rec_mxn * 4.3:,.0f}",
-        "X_EXTRA_SESSIONS": f"{saved:.0f}", "X_EXTRA_MXN": f"{saved * 400:,.0f}",
+        "X_EXTRA_SESSIONS": f"{saved:.0f}", "X_EXTRA_MXN": f"{round(saved) * 400:,}",
         "X_FEEDBACK": str(wa["feedback_ratings"]), "X_FEEDBACK_AVG": str(wa["feedback_avg"]),
         "L_PATIENT": f"{lat_p[len(lat_p) // 2]:.1f}", "L_THERAPIST": f"{lat_t[len(lat_t) // 2]:.1f}",
-        "T1_SLOT": t1_slot, "T1_USD": usd(t1_usd, 5), "T2_USD": usd(t2_usd, 4), "T2_SECONDS": f"{t2_secs:.0f}",
+        "T1_SLOT": t1_slot, "T1_USD": usd(t1_usd, 5), "T2_USD": usd(steps[("newpatient", "notes")]["usd"], 4),
+        "T2_HA_USD": usd(t2_usd, 5), "T2_SECONDS": f"{t2_secs:.0f}",
         "TRACE1_TABLE": tr1, "TRACE2_TABLE": tr2, "RUNS_TABLE": runs_table,
         "WEEK_TABLE": week_rows(), "WEEK_TABLE_SHORT": week_rows(short=True), "SCALE_TABLE": "\n".join(scale),
         "CACHE_CHART": cache_chart(), "IMPACT_TABLE": impact, "DIAGRAM": diagram(),

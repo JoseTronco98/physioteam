@@ -9,6 +9,7 @@ message to a doctor waits for her approval. A full clinic week is simulated so a
 - **Run it:** locally, in about 3 minutes (below). It is not hosted, so the course API key is never exposed online.
 - **Model:** `gpt-6-luna` through Portkey (PydanticAI agents, OpenAI Responses API). No other model or key is used.
 - **Report and slides:** `report/out/report.html` and `report/out/slides.html` (open with a double-click).
+- **Demo video (3 min):** submitted on Canvas with the report: a practicing physical therapist runs the three demos.
 - All patients, doctors, chats and notes are fictional.
 
 ## Run it locally (about 3 minutes)

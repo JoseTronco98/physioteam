@@ -1,5 +1,5 @@
 """Embed every <img src="shots/x.png"> as a JPEG data URI so the report and slides open anywhere.
-Writes report/out/report.html and slides.html, and copies them to ../deliverable/ (the Canvas folder).
+Writes report/out/report.html and slides.html, and copies them to ../../deliverable/ (the Canvas folder) if that folder exists.
 Run: python report/build.py"""
 
 import base64
@@ -39,7 +39,6 @@ for name in ("report", "slides"):
 
     html = re.sub(r'src="(shots/[^"]+\.png)"', repl, html)
     (OUT / f"{name}.html").write_text(html, encoding="utf-8")
-    if CANVAS.parent.is_dir():
-        CANVAS.mkdir(exist_ok=True)
+    if CANVAS.is_dir():   # only on the author's machine
         shutil.copy(OUT / f"{name}.html", CANVAS / f"{name}.html")
     print(f"{name}.html {len(html) / 1e6:.1f} MB", "MISSING: " + ", ".join(missing) if missing else "")

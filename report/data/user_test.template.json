@@ -1,0 +1,27 @@
+{
+  "repo_visibility": "public (or: private)",
+  "session": "who tested it and how, e.g. a practicing physical therapist ... over a recorded video call (26 minutes)",
+  "pains": "her biggest admin pains, in her words",
+  "booking_by_hand": "e.g. about 2 minutes per patient",
+  "admin_time": "e.g. about 2 hours a day = 10 hours a week",
+  "ran": "what she ran in the app",
+  "not_measured": "what this session did not measure",
+  "quote_time": "her sentence about time (verbatim)",
+  "quote": "her closing sentence (verbatim; use … for cuts)",
+  "quote_short": "a shorter version for the executive summary",
+  "minutes": {
+    "message": 1.5,
+    "reminder": 0.5,
+    "evaluation": 20,
+    "soap": 5,
+    "plan": 10,
+    "report": 15
+  },
+  "minutes_basis": "how the minutes were obtained; read as 'minutes per task are <this>'",
+  "review_minutes": {
+    "evaluation": 5,
+    "soap": 1,
+    "plan": 2,
+    "report": 3
+  }
+}

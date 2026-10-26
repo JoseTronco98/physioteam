@@ -71,7 +71,7 @@
 <!-- ============================================================ 1 · TITLE + LINKS + EXECUTIVE SUMMARY -->
 <section class="first">
 <div class="cover">
-  <div class="kick">MGT 409 · AI agents · Final project</div>
+  <div class="kick">MGT 409 · AI Foundations for Managers · Final project</div>
   <h1>PhysioTeam</h1>
   <div class="sub">A six-agent AI team that runs the back office of a solo physical therapy clinic on WhatsApp, so the therapist can spend her time with patients, not paperwork.</div>
 </div>
@@ -81,23 +81,23 @@
   <b>Run it (3 min)</b><span><code>pip install -r requirements.txt</code> → put <code>PORTKEY_API_KEY</code> in <code>.env</code> → <code>python run.py</code> → <code>http://localhost:8000</code>. Python only; the React build is committed. Full steps: Appendix A.</span>
   <b>Live app</b><span>Not hosted permanently (the course key would be public). A Render blueprint (<code>render.yaml</code>) deploys it in one step.</span>
   <b>What it does</b><span>Patients write on WhatsApp; six agents book, apply the clinic's policies, chase payments, draft every clinical form and doctor report, and report results. The therapist only approves.</span>
-  <b>Demo video</b><span>Submitted with this report: the therapist who tested the app, using it (about 3 minutes).</span>
+  <b>Demo video</b><span>Submitted with this report (3 minutes): the physical therapist who tested PhysioTeam describes her three pain points, then three live demos on her screen: booking, clinical reports, finances.</span>
 </div>
 
 <div class="exec">
 <h3>Executive summary</h3>
 <ol>
-  <li><b>A solo physical therapist is also her own receptionist, biller and secretary.</b> In a practice like the one we studied (about 25 patients, 3 sessions a week each), that is ⟦X_BASE_HOURS⟧ hours a week of WhatsApp and paperwork by our model, mostly after hours.</li>
+  <li><b>A solo physical therapist is also her own receptionist, biller and secretary.</b> In a practice like the one we studied (about 25 patients, 3 sessions a week each), that is <b>about 2 hours a day</b> of booking, reports and finances by her own estimate (10 hours a week, ~40 a month), and ⟦X_BASE_HOURS⟧ hours a week by our model, mostly after hours.</li>
   <li><b>PhysioTeam covers the whole back office, not one task.</b> Six PydanticAI agents with 58 tools handle booking, the 24-hour policy, the waitlist, payments, invoices, evaluations, SOAP notes, treatment plans, doctor reports and weekly results, built on the clinic's own forms and rules. Competitors cover one or two of these.</li>
   <li><b>The therapist stays in charge, in code.</b> Every booking, charge, document and doctor message is an approval card executed by code; safety rules run before any model sees a message. All 8 attack and edge-case tests pass; ⟦K_HANDLED⟧% of a week's patient messages needed no interruption.</li>
   <li><b>It is accurate enough to trust as a first draft.</b> On 30 real-format therapist notes, the Clinical Scribe filled ⟦Q_EVAL_COMPLETE⟧% of the evaluation form and ⟦Q_SOAP_COMPLETE⟧% of SOAP notes, and ⟦Q_GROUNDED⟧% of the numbers it wrote appear in the notes (the rest are flagged for review), in ⟦Q_EVAL_SECONDS⟧ s per evaluation.</li>
   <li><b>It costs almost nothing to run.</b> A full measured clinic week costs <b>⟦K_WEEK_USD⟧</b> in AI (⟦K_CACHED⟧% of input from cache), about <b>⟦K_MONTH_USD⟧ per clinic per month</b>, and ⟦K_10K_MONTH⟧ a month for 10,000 clinics.</li>
-  <li><b>The prize is time and filled agenda slots.</b> Our model frees about <b>⟦X_SAVED_HOURS⟧ hours a week</b>; refilling freed slots from the waitlist recovered MXN ⟦X_RECOVERED_MXN⟧ in the simulated week. ⟦USER_TEST_ONE_LINE⟧</li>
+  <li><b>The prize is time and filled agenda slots.</b> Our model frees about <b>⟦X_SAVED_HOURS⟧ hours a week</b>, in line with her 2 hours a day (~40 hours a month); refilling freed slots from the waitlist recovered MXN ⟦X_RECOVERED_MXN⟧ in the simulated week. ⟦USER_TEST_ONE_LINE⟧</li>
 </ol>
 </div>
 <div class="kpis">
   <div class="kpi"><b>⟦K_WEEK_USD⟧</b><span>AI cost of a full clinic week (⟦K_WEEK_PATIENTS⟧ patients, ⟦K_MESSAGES⟧ WhatsApp messages)</span></div>
-  <div class="kpi"><b>⟦X_SAVED_HOURS⟧ h</b><span>therapist time freed per week (model, section 7)</span></div>
+  <div class="kpi"><b>2 h / day</b><span>of the therapist's time back: 10 h a week, ~40 h a month (her estimate; model ⟦X_SAVED_HOURS⟧ h/week, section 6)</span></div>
   <div class="kpi"><b>⟦Q_GROUNDED⟧%</b><span>of numbers in drafted forms found in the therapist's notes</span></div>
   <div class="kpi"><b>8 / 8</b><span>safety tests passed (injection, hidden PDF text, red flag, privacy…)</span></div>
   <div class="kpi"><b>45</b><span>capabilities, each shown in 5 one-click stories</span></div>
@@ -113,11 +113,11 @@
 <div class="ex">
   <div class="et"><span class="n">Exhibit 1</span>Where a solo therapist's admin week goes: about ⟦X_BASE_HOURS⟧ hours, most of it outside clinic hours</div>
   ⟦X_BASE_CHART⟧
-  <div class="src"><b>Note:</b> volumes measured in PhysioTeam's simulated clinic week (⟦K_WEEK_PATIENTS⟧ patients, ⟦X_INBOUND⟧ inbound WhatsApp messages, ⟦X_SESSIONS⟧ sessions); minutes per task are stated assumptions (Exhibit 13), to be replaced by the therapist's own timings (section 7). <b>Source:</b> PhysioTeam simulation, Oct 2026; team analysis.</div>
+  <div class="src"><b>Note:</b> volumes measured in PhysioTeam's simulated clinic week (⟦K_WEEK_PATIENTS⟧ patients, ⟦X_INBOUND⟧ inbound WhatsApp messages, ⟦X_SESSIONS⟧ sessions); minutes per task as in Exhibit 18. The therapist who tested it puts the same work at about 2 hours a day, 10 hours a week (section 6). <b>Source:</b> PhysioTeam simulation, Oct 2026; team analysis.</div>
 </div>
 <p><b>What it costs.</b></p>
 <ul>
-  <li><b>Time:</b> about ⟦X_BASE_HOURS⟧ hours a week by our model, the equivalent of a full clinic day, unpaid.</li>
+  <li><b>Time:</b> about 2 hours a day by her estimate, 10 hours a week (⟦X_BASE_HOURS⟧ by our model): the equivalent of a full clinic day, unpaid.</li>
   <li><b>Money:</b> each empty hour is MXN 400-600 lost. The 24-hour cancellation charge is awkward to apply by hand, so it is often waived, and a freed slot is rarely refilled because nobody has time to text the waitlist.</li>
   <li><b>Patients:</b> about 70% of physical therapy patients don't finish their plan of care (WebPT); a 2021 PLOS ONE cohort of 440,000 patients found 73% missed at least one visit. Reminders, quick answers and follow-up are what keep them coming.</li>
 </ul>
@@ -149,7 +149,7 @@
   <li><b>Built from a real clinic.</b> Her evaluation and SOAP forms (same sections, same order), her prices, her policy, her WhatsApp patterns. Output files follow her naming rule (<code>yymmdd_PatientName_Type</code>).</li>
   <li><b>Control by construction.</b> Approval cards are executed by <code>approvals.py</code>, never by a model; routine clinical questions are batched for the next session instead of interrupting her.</li>
 </ul>
-<div class="take"><b>Honest comparison.</b> Doctoralia has a patient marketplace and Jane a certified EMR; PhysioTeam has neither, and it is not yet connected to a real WhatsApp number (section 8). What it shows is that one small agent team can do the work those tools leave to the therapist, for cents a month.</div>
+<div class="take"><b>Honest comparison.</b> Doctoralia has a patient marketplace and Jane a certified EMR; PhysioTeam has neither, and it is not yet connected to a real WhatsApp number (section 7). What it shows is that one small agent team can do the work those tools leave to the therapist, for cents a month.</div>
 </section>
 
 <!-- ============================================================ 4 · THE AGENTS -->
@@ -189,9 +189,9 @@
 </div>
 <h3>Traced run 2 · First-visit notes become an evaluation, a plan and home exercises (story 3, step 5)</h3>
 <div class="ex">
-  <div class="et"><span class="n">Exhibit 7</span>The Health Advisor delegates to the Clinical Scribe, proposes the plan and sends exercises: ⟦T2_USD⟧, ⟦T2_SECONDS⟧ s</div>
+  <div class="et"><span class="n">Exhibit 7</span>The Health Advisor delegates to the Clinical Scribe, proposes the plan and sends exercises: ⟦T2_USD⟧ for the whole step, ⟦T2_SECONDS⟧ s</div>
   ⟦TRACE2_TABLE⟧
-  <div class="src"><b>Source:</b> audit trail, run <code>rep_newpatient_notes</code>.</div>
+  <div class="src"><b>Note:</b> the rows are the Health Advisor's own run (⟦T2_HA_USD⟧); the Clinical Scribe's drafting call is metered as its own run and brings the step to ⟦T2_USD⟧ (Exhibit 10). <b>Source:</b> audit trail, run <code>rep_newpatient_notes</code>.</div>
 </div>
 <div class="two">
   <div class="ex"><div class="et"><span class="n">Exhibit 8</span>The drafted evaluation, in the clinic's form layout</div><img src="shots/pdf_eval_javier_p1.png" alt="Evaluation PDF"><div class="src">Missing values print as "-", never guessed. File: <code>⟦F_EVAL⟧.pdf</code></div></div>
@@ -269,13 +269,13 @@
 <!-- ============================================================ 7 · IMPACT -->
 <section>
 <div class="tracker"><span>Summary</span><span>Motivation</span><span>What is new</span><span>Agents</span><span>Tokenomics</span><span>Safety</span><span class="on">Impact</span><span>Limits</span><span>Appendix</span></div>
-<h2><span class="num">6 · </span>PhysioTeam gives the therapist back about ⟦X_SAVED_HOURS⟧ hours a week and refills freed slots, for less than the price of one session a year</h2>
-<h3>Tested by a practicing physical therapist</h3>
+<h2><span class="num">6 · </span>PhysioTeam gives the therapist back about 2 hours a day (10 a week, ~40 a month) and refills freed slots, for less than the price of one session a year</h2>
+<h3>Tested by a practicing physical therapist (her session is the demo video)</h3>
 ⟦USER_TEST⟧
 <div class="ex">
   <div class="et"><span class="n">Exhibit 18</span>Time model: about ⟦X_BASE_HOURS⟧ hours of weekly admin become about ⟦X_AFTER_HOURS⟧ hours of review and approvals</div>
   ⟦TIME_TABLE⟧
-  <div class="src"><b>Note:</b> weekly volumes measured in the simulated clinic (⟦K_WEEK_PATIENTS⟧ patients); minutes per task are ⟦X_TIME_BASIS⟧. With PhysioTeam she reads drafts and taps approvals; routine messages need no action. <b>Source:</b> PhysioTeam simulation; team analysis.</div>
+  <div class="src"><b>Note:</b> weekly volumes measured in the simulated clinic (⟦K_WEEK_PATIENTS⟧ patients); minutes per task are ⟦X_TIME_BASIS⟧. With PhysioTeam she reads drafts and taps approvals; routine messages need no action. The model's ⟦X_SAVED_HOURS⟧ hours a week match her own estimate of 2 hours a day (Exhibit 18a); four weeks of that is about 40 hours a month. <b>Source:</b> PhysioTeam simulation; team analysis.</div>
 </div>
 <div class="ex">
   <div class="et"><span class="n">Exhibit 19</span>What the measured week delivered</div>
@@ -288,7 +288,7 @@
 </ul>
 <div class="ex">
   <div class="et"><span class="n">Exhibit 20</span>A patient folder: evaluation, plan versions, one SOAP per session, progress reports and the feedback file, named by her rule</div>
-  <img src="shots/folder_hector.png" alt="Patient folder">
+  <img src="shots/folder_hector.png" alt="Patient folder" style="width:82%;display:block;margin:0 auto">
 </div>
 </section>
 

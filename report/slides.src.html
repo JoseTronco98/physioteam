@@ -56,7 +56,7 @@
 <section data-background-color="#03522D">
   <div class="cover">
     <div class="in">
-      <p style="letter-spacing:.1em;font-size:.55em;text-transform:uppercase;color:#9FE0BE;font-weight:700">MGT 409 · Final project</p>
+      <p style="letter-spacing:.1em;font-size:.55em;text-transform:uppercase;color:#9FE0BE;font-weight:700">MGT 409 · AI Foundations for Managers · Final project</p>
       <h1>PhysioTeam</h1>
       <p>A six-agent AI team that runs the back office of a solo physical therapy clinic on WhatsApp.</p>
       <p style="font-size:.6em;margin-top:2.2em;color:#CDEBDB">Jose Tronco · October 2026</p>
@@ -72,15 +72,15 @@
 <!-- 2 · Executive summary -->
 <section>
   <div class="tracker"><span class="on">Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
-  <h2>A solo therapist gets about ⟦X_SAVED_HOURS⟧ hours a week back, under her control, for ⟦K_MONTH_USD⟧ a month in AI</h2>
+  <h2>A solo therapist gets about 2 hours a day back (10 a week, ~40 a month), under her control, for ⟦K_MONTH_USD⟧ a month in AI</h2>
   <div class="kpis">
-    <div class="kpi"><b>⟦X_SAVED_HOURS⟧ h</b><span>therapist time freed per week (model)</span></div>
+    <div class="kpi"><b>2 h / day</b><span>back to the therapist: 10 h a week, ~40 h a month (her estimate; model ⟦X_SAVED_HOURS⟧ h/week)</span></div>
     <div class="kpi"><b>⟦K_WEEK_USD⟧</b><span>AI cost of a full measured clinic week</span></div>
     <div class="kpi"><b>⟦Q_GROUNDED⟧%</b><span>of numbers in drafted forms found in her notes (30 notes)</span></div>
     <div class="kpi"><b>8 / 8</b><span>safety tests passed</span></div>
   </div>
   <ul style="font-size:.98em;margin-top:.7em">
-    <li><b>Problem:</b> a one-room practice is also its own receptionist, biller and secretary: ~⟦X_BASE_HOURS⟧ h/week of WhatsApp and forms, mostly after hours</li>
+    <li><b>Problem:</b> a one-room practice is also its own receptionist, biller and secretary: ~2 h a day of WhatsApp, forms and payments (her estimate), mostly after hours</li>
     <li><b>Solution:</b> six agents and 58 tools run booking, policy, waitlist, payments, every clinical form and doctor report, on her templates</li>
     <li><b>Control:</b> every booking, charge, document and doctor message is an approval executed in code; safety rules run before any model</li>
     <li><b>Evidence:</b> ⟦USER_TEST_ONE_LINE⟧</li>
@@ -102,7 +102,8 @@
       <li>77-80 M WhatsApp users in Mexico: the channel patients already use</li>
     </ul>
   </div>
-  <div class="src">Note: volumes measured in the simulated clinic week; minutes per task are stated assumptions. Source: PhysioTeam simulation; WebPT; dplnews.com.</div><div class="pg">3</div>
+  <div class="take" style="margin-top:.8em"><b>The therapist who tested it:</b> her three pains are booking over WhatsApp ("maybe two minutes per patient"), diagnosis and follow-up reports for referring doctors, and finances (who has paid, who owes her): <b>about 2 hours a day, 10 hours a week</b>.</div>
+  <div class="src">Note: volumes measured in the simulated clinic week; minutes per task as in report Exhibit 18; her own estimate is ~2 h a day. Source: PhysioTeam simulation; user test; WebPT; dplnews.com.</div><div class="pg">3</div>
 </section>
 
 <!-- 4 · What's new -->
@@ -191,12 +192,18 @@
 <!-- 9 · Impact -->
 <section>
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span class="on">Impact</span><span>Next</span></div>
-  <h2>She gets back about ⟦X_SAVED_HOURS⟧ hours a week and refilled slots, for less than one session's price a year</h2>
+  <h2>She gets back about 2 hours a day (~40 a month) and refilled slots, for less than one session's price a year</h2>
   <div class="grid2">
     <div>⟦TIME_CHART⟧</div>
     <div>⟦SLIDE_IMPACT⟧</div>
   </div>
-  <div class="src">Note: weekly volumes measured; minutes per task are ⟦X_TIME_BASIS⟧. Source: PhysioTeam simulation; user test.</div><div class="pg">9</div>
+  <div class="kpis" style="margin-top:.8em">
+    <div class="kpi"><b>2 h</b><span>a day back to patient care (her estimate)</span></div>
+    <div class="kpi"><b>10 h</b><span>a week: a full clinic day (model ⟦X_SAVED_HOURS⟧ h)</span></div>
+    <div class="kpi"><b>~40 h</b><span>a month for one solo clinic owner</span></div>
+    <div class="kpi"><b>⟦K_MONTH_USD⟧</b><span>AI cost per clinic per month</span></div>
+  </div>
+  <div class="src">Note: weekly volumes measured; minutes per task are ⟦X_TIME_BASIS⟧. Source: PhysioTeam simulation; recorded user test with a practicing physical therapist (the demo video).</div><div class="pg">9</div>
 </section>
 
 <!-- 10 · Next -->

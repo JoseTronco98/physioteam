@@ -9,8 +9,8 @@ __pycache__/
 *.pyc
 
 # runtime data (generated on first run)
-data/
-output/
+/data/
+/output/
 *.db
 
 # front end
@@ -23,3 +23,6 @@ Thumbs.db
 
 # report build intermediates
 report/*.ready.html
+
+# report previews (python report/check.py)
+report/preview/

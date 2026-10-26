@@ -1,5 +1,5 @@
-﻿"""Print report.html to a letter PDF (like a grader would), count pages, and render page previews.
-Also screenshot the first slides. Run: python ..\\deliverable_src\\check.py <preview_dir>"""
+"""Print report.html to a letter PDF (like a grader would), count pages, and render page previews.
+Also screenshot the first slides. Run: python report/check.py [preview_dir]"""
 
 import sys
 from pathlib import Path
