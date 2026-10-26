@@ -9,15 +9,15 @@ DR = json.loads((R / "data" / "demo_runs.json").read_text(encoding="utf-8"))
 G, GD, GDD, GL, GREY = "#29BA74", "#197A56", "#03522D", "#DCF3E7", "#E8EAED"
 WHO = {"patient": "Patient", "doctor": "Doctor", "you": "Therapist", "clinic": "Clock"}
 META = {
-    "demo1": {"n": 5, "shot": "demo1_combo.png", "w": "70%",
+    "demo1": {"n": 5, "shot": "demo1_combo.png", "w": "56%",
               "lead": "Valentina is hard to book: she asks for a time, cancels four hours before, argues about the fee, "
                       "wants to be moved earlier if anything opens, and finally needs her next weeks booked. "
                       "Patient Success handles every message; the therapist taps three decisions and asks for one thing; code does the rest."},
-    "demo2": {"n": 6, "shot": "demo2_combo.png", "w": "80%",
+    "demo2": {"n": 6, "shot": "demo2_combo.png", "w": "64%",
               "lead": "Javier writes for the first time, answers the intake, comes for his first visit; the therapist sends "
                       "the session notes and the Health Advisor, with the Clinical Scribe, drafts the evaluation in the clinic's "
                       "form and a treatment plan (Exhibits 8 and 9). The therapist signs and approves; the sessions book themselves."},
-    "demo3": {"n": 7, "shot": "demo3_combo.png", "w": "78%",
+    "demo3": {"n": 7, "shot": "demo3_combo.png", "w": "74%",
               "lead": "A normal day (late start, a blocked hour, a family booking, a payment) runs to closing; the therapist "
                       "asks who owes money, the week runs to Saturday, and the therapist asks how the "
                       "week went. Finance Ops and the Operations Partner answer from the ledger and the agenda."},
@@ -70,7 +70,7 @@ def what(st):
 
 def tools_of(st):
     if not st["runs"] and not st["tools"]:
-        return "<i>code only</i> (approvals.py, policy, booking)" if st["actor"] != "clinic" else "<i>code only</i> (simulated clock, reminders)"
+        return "<i>code only</i> (approval card, policy, booking)" if st["actor"] != "clinic" else "<i>code only</i> (simulated clock, reminders)"
     by = {}
     for t in st["tools"]:
         if t["tool"] not in by.setdefault(t["agent"], []):
@@ -85,7 +85,7 @@ def tools_of(st):
 def flow(dm):
     """Swimlane-free flow: one chip per step, coloured by who acts; the agents under each chip."""
     steps = [s for s in dm["steps"] if s["focus"]]
-    per_row, w, h, gap, row_h = 5, 142, 60, 12, 104
+    per_row, w, h, gap, row_h = 6, 142, 60, 12, 104
     rows = (len(steps) + per_row - 1) // per_row
     W, H = per_row * (w + gap), rows * row_h + 6
     out = [f'<svg viewBox="0 0 {W} {H}" width="100%" xmlns="http://www.w3.org/2000/svg" style="max-height:{rows * 1.05:.2f}in">']
@@ -147,18 +147,40 @@ def exhibit(dm):
             f'{esc(DR["measured"])}, {esc(DR["model"])}; same scripted patient lines, live agents.</div></div>')
 
 
+SLIDE = {   # slide 6: name, situation, key picture, 4-5 key steps (full tables in report Exhibits 5-7)
+    "demo1": ("Demo 1 · Booking: the hard-to-book patient",
+              "A returning patient books, cancels 4 hours before, disputes the late fee and asks to be moved if an earlier slot opens.",
+              "key_demo1_approval.png",
+              [("P", "Asks for a session; the agent holds the slot"), ("T", "Approves the booking card"),
+               ("P", "Cancels late and disputes the fee"), ("T", "Waives the fee, once"),
+               ("P", "An earlier slot frees up; she is moved in")]),
+    "demo2": ("Demo 2 · Clinical reports: a new patient",
+              "A new patient with an ankle sprain writes for the first time; after the first visit the therapist hands over the session notes.",
+              "key_demo2_drafts.png",
+              [("P", "Writes, answers the intake questions"), ("T", "Approves the first visit"),
+               ("C", "The visit starts; the agent asks for notes"), ("T", "Sends notes: evaluation and plan drafted"),
+               ("T", "Signs both; the sessions book themselves")]),
+    "demo3": ("Demo 3 · Finances: who owes, how the week went",
+              "End of day and end of week: the therapist asks who owes money and how the week went.",
+              "key_demo3_week.png",
+              [("C", "The day runs to closing"), ("T", "\"Who owes me money?\" answered from the ledger"),
+               ("C", "The week runs to Saturday"), ("T", "\"How did the week go?\" weekly results")]),
+}
+
+
 def slide():
-    cols = []
+    """Three columns with the same fixed rows: name, situation, picture, steps, result (one grid, rows aligned)."""
+    cells = {k: [] for k in ("name", "sit", "pic", "steps", "res")}
     for dm in DR["demos"]:
-        m = META[dm["id"]]
+        name, sit, pic, steps = SLIDE[dm["id"]]
         _, t, runs, taps, n = table(dm)
-        steps = [s for s in dm["steps"] if s["focus"]]
-        li = "".join(f'<li><b>{WHO.get(s["actor"], "")[:1]}</b> {esc(short(s["title"].strip(chr(34)), 40))}</li>' for s in steps)
-        cols.append(f'<div class="dcol"><p class="q">Demo {dm["id"][-1]} · {esc(dm["title"].split(":")[0])}</p>'
-                    f'<img class="shot" src="shots/{m["shot"]}" alt="Demo" style="max-height:150px;width:auto;max-width:100%">'
-                    f'<ol class="dsteps">{li}</ol>'
-                    f'<div class="dkpi"><b>${t["usd"]:.4f}</b> · {runs} agent runs · {taps} taps</div></div>')
-    return '<div class="dgrid">' + "".join(cols) + "</div>"
+        cells["name"].append(f'<div class="dc dn">{esc(name)}</div>')
+        cells["sit"].append(f'<div class="dc ds">{esc(sit)}</div>')
+        cells["pic"].append(f'<div class="dc dp"><img src="shots/{pic}" alt="{esc(name)}"></div>')
+        li = "".join(f'<li><b>{k}</b> {esc(v)}</li>' for k, v in steps)
+        cells["steps"].append(f'<div class="dc dl"><ul>{li}</ul></div>')
+        cells["res"].append(f'<div class="dc dr"><b>${t["usd"]:.4f}</b> of AI · {runs} agent runs · {taps} taps</div>')
+    return '<div class="dgrid">' + "".join("".join(cells[k]) for k in ("name", "sit", "pic", "steps", "res")) + "</div>"
 
 
 def markers() -> dict:

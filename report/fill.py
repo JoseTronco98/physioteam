@@ -60,8 +60,8 @@ def before_after(rows, width=560, unit="h"):
     mx = max(b for _, b, _ in rows) or 1
     lw = 150
     out = [f'<svg viewBox="0 0 {width} {h}" width="100%" xmlns="http://www.w3.org/2000/svg">',
-           f'<rect x="{lw}" y="2" width="12" height="10" fill="#B9B9B9"/><text x="{lw + 16}" y="11" font-size="10" fill="#5F6368">By hand today</text>',
-           f'<rect x="{lw + 110}" y="2" width="12" height="10" fill="{G}"/><text x="{lw + 126}" y="11" font-size="10" fill="#5F6368">With PhysioTeam</text>']
+           f'<rect x="{min(lw, width - 220)}" y="2" width="12" height="10" fill="#B9B9B9"/><text x="{min(lw, width - 220) + 16}" y="11" font-size="10" fill="#5F6368">By hand today</text>',
+           f'<rect x="{min(lw, width - 220) + 105}" y="2" width="12" height="10" fill="{G}"/><text x="{min(lw, width - 220) + 121}" y="11" font-size="10" fill="#5F6368">With PhysioTeam</text>']
     for i, (lab, b, a) in enumerate(rows):
         y = 22 + i * 34
         wb, wa = (width - lw - 60) * b / mx, (width - lw - 60) * a / mx
@@ -90,34 +90,63 @@ def cache_chart():
 
 
 def diagram():
-    """Agent architecture in the report's greens."""
-    box = lambda x, y, w, h, fill, stroke, t1, t2, c1="#212427", c2="#5F6368": (  # noqa: E731
-        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="4" fill="{fill}" stroke="{stroke}" stroke-width="1.3"/>'
-        f'<text x="{x + w / 2}" y="{y + h / 2 - (3 if t2 else -5)}" text-anchor="middle" font-size="13.5" font-weight="700" fill="{c1}">{t1}</text>'
-        + (f'<text x="{x + w / 2}" y="{y + h / 2 + 14}" text-anchor="middle" font-size="10.5" fill="{c2}">{t2}</text>' if t2 else ""))
-    arrow = lambda x1, y1, x2, y2, c="#5F6368", d="": (  # noqa: E731
-        f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{c}" stroke-width="1.6" {d} marker-end="url(#ah)"/>')
-    s = ['<svg viewBox="0 0 980 450" width="100%" xmlns="http://www.w3.org/2000/svg">',
-         f'<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5F6368"/></marker></defs>',
-         '<rect x="0" y="0" width="980" height="450" fill="#FFFFFF"/>',
-         box(20, 30, 165, 66, "#F2F2F2", "#B9B9B9", "Patients", "WhatsApp"),
-         box(20, 200, 165, 66, "#F2F2F2", "#B9B9B9", "Referring doctors", "doctor channel"),
-         box(215, 30, 140, 66, "#FFF8E6", "#B8860B", "Safety layer", "code, before any model", "#7A5A00", "#7A5A00"),
-         box(385, 30, 165, 66, "#FFFFFF", G, "Patient Success", "only voice to patients"),
-         box(385, 145, 165, 52, "#FFFFFF", G, "Finance Ops", ""),
-         box(385, 280, 165, 52, "#FFFFFF", G, "Clinical Scribe", ""),
-         box(385, 350, 165, 52, "#FFFFFF", G, "Imaging Reader", ""),
-         box(585, 135, 190, 66, GD, GD, "Operations Partner", "lead · agenda, money", "#FFFFFF", "#DCF3E7"),
-         box(585, 280, 190, 66, GD, GD, "Health Advisor", "lead · clinical, doctors", "#FFFFFF", "#DCF3E7"),
-         box(805, 30, 155, 66, GDD, GDD, "The therapist", "chat · approvals", "#FFFFFF", "#DCF3E7"),
-         arrow(185, 63, 213, 63), arrow(355, 63, 383, 63), arrow(550, 80, 610, 133),
-         arrow(583, 171, 552, 171), arrow(583, 306, 552, 306), arrow(600, 346, 552, 372),
-         arrow(185, 233, 583, 300), arrow(680, 203, 680, 278, "#5F6368", 'stroke-dasharray="4 4"'),
-         '<text x="690" y="245" font-size="10.5" fill="#5F6368">one hand-off per request</text>',
-         arrow(880, 98, 777, 160, GDD), arrow(880, 98, 777, 300, GDD),
-         f'<rect x="20" y="415" width="940" height="30" rx="3" fill="{GL}" stroke="{G}"/>',
-         f'<text x="490" y="435" text-anchor="middle" font-size="11.5" fill="{GDD}"><tspan font-weight="700">Code layer (no model):</tspan> approvals executed in code · 24 h policy · waitlist · reminders · 1-5 feedback · spend caps · audit trail · loop guard</text>',
-         "</svg>"]
+    """Agent architecture in lanes (channels | code checks | leads | specialists), right-angle connectors, no crossings."""
+    def box(x, y, w, h, fill, stroke, t1, t2="", c1="#212427", c2="#5F6368"):
+        return (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="4" fill="{fill}" stroke="{stroke}" stroke-width="1.3"/>'
+                f'<text x="{x + w / 2}" y="{y + h / 2 - (3 if t2 else -5)}" text-anchor="middle" font-size="14" font-weight="700" fill="{c1}">{t1}</text>'
+                + (f'<text x="{x + w / 2}" y="{y + h / 2 + 15}" text-anchor="middle" font-size="11" fill="{c2}">{t2}</text>' if t2 else ""))
+
+    def path(pts, c="#5F6368", dash=False):
+        d = "M" + " L".join(f"{x},{y}" for x, y in pts)
+        return (f'<path d="{d}" fill="none" stroke="{c}" stroke-width="1.7"{" stroke-dasharray=\"5 4\"" if dash else ""} '
+                f'marker-end="url(#ah{"d" if c != "#5F6368" else ""})"/>')
+
+    W, H = 980, 434
+    LX, SX, MX, RX = 20, 205, 420, 690          # lane left edges: channels, code checks, leads, specialists
+    CW, SW, MW, RW = 150, 145, 200, 230         # lane box widths
+    ops_y, ha_y, lh = 127, 267, 66              # leads: top edges, height
+    s = [f'<svg viewBox="0 0 {W} {H}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif">',
+         '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5F6368"/></marker>'
+         f'<marker id="ahd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="{GDD}"/></marker></defs>',
+         f'<rect x="0" y="0" width="{W}" height="{H}" fill="#FFFFFF"/>']
+    # lane labels
+    for x, w, t in ((LX, CW, "CHANNELS"), (SX, SW, "CODE CHECKS"), (MX, MW, "LEADS"), (RX, RW, "SPECIALISTS")):
+        s.append(f'<text x="{x + w / 2}" y="378" text-anchor="middle" font-size="10.5" letter-spacing="1" fill="#9A9A9A">{t}</text>')
+    # boxes
+    s += [box(MX, 36, MW, 52, GDD, GDD, "The therapist", "chat · approval cards", "#FFFFFF", "#DCF3E7"),
+          box(LX, ops_y, CW, lh, "#F2F2F2", "#B9B9B9", "Patients", "WhatsApp"),
+          box(SX, ops_y, SW, lh, "#FFF8E6", "#B8860B", "Safety layer", "code, before any model", "#7A5A00", "#7A5A00"),
+          box(LX, ha_y + 15, CW, lh, "#F2F2F2", "#B9B9B9", "Referring doctors", "doctor channel"),
+          box(MX, ops_y, MW, lh, GD, GD, "Operations Partner", "lead · agenda, money", "#FFFFFF", "#DCF3E7"),
+          box(MX, ha_y, MW, lh, GD, GD, "Health Advisor", "lead · clinical, doctors", "#FFFFFF", "#DCF3E7"),
+          box(RX, 100, RW, 50, "#FFFFFF", G, "Patient Success", "the only voice to patients"),
+          box(RX, 170, RW, 50, "#FFFFFF", G, "Finance Ops", "balances, payments, results"),
+          box(RX, 240, RW, 50, "#FFFFFF", G, "Clinical Scribe", "notes → the clinic's forms"),
+          box(RX, 310, RW, 50, "#FFFFFF", G, "Imaging Reader", "reads studies and referrals")]
+    oc, hc = ops_y + lh / 2, ha_y + lh / 2      # lead centers (160, 300)
+    s += [
+        # patients -> safety layer -> (over the top) -> Patient Success
+        path([(LX + CW, oc), (SX - 2, oc)]),
+        path([(SX + SW / 2, ops_y), (SX + SW / 2, 14), (RX + RW / 2, 14), (RX + RW / 2, 98)]),
+        f'<text x="{MX + MW + 92}" y="31" text-anchor="middle" font-size="10.5" fill="#5F6368">patients reach only Patient Success</text>',
+        # doctors -> Health Advisor (straight)
+        path([(LX + CW, hc + 15), (MX - 2, hc + 15)]),
+        # therapist -> both leads
+        path([(MX + MW / 2, 88), (MX + MW / 2, ops_y - 2)], GDD),
+        path([(MX, 62), (MX - 30, 62), (MX - 30, hc - 15), (MX - 2, hc - 15)], GDD),
+        # one hand-off per request between the leads (dotted, label beside it)
+        path([(MX + MW / 2, ops_y + lh), (MX + MW / 2, ha_y - 2)], dash=True),
+        f'<text x="{MX + MW / 2 + 10}" y="{(ops_y + lh + ha_y) / 2 + 4}" font-size="10.5" fill="#5F6368">one hand-off per request</text>',
+        # leads -> their specialists (brackets)
+        path([(MX + MW, oc), (RX - 30, oc), (RX - 30, 125), (RX - 2, 125)]),
+        path([(RX - 30, oc), (RX - 30, 195), (RX - 2, 195)]),
+        path([(MX + MW, hc), (RX - 30, hc), (RX - 30, 265), (RX - 2, 265)]),
+        path([(RX - 30, hc), (RX - 30, 335), (RX - 2, 335)]),
+        # code layer band
+        f'<rect x="{LX}" y="392" width="{W - 2 * LX}" height="34" rx="3" fill="{GL}" stroke="{G}"/>',
+        f'<text x="{W / 2}" y="414" text-anchor="middle" font-size="12" fill="{GDD}"><tspan font-weight="700">Code layer (no model):</tspan> '
+        'approval cards executed in code · 24-hour policy · waitlist · reminders · 1-5 feedback · spend caps · audit trail · loop guard</text>',
+        "</svg>"]
     return "".join(s)
 
 
@@ -277,7 +306,7 @@ def main():
         review_ratio = sum(r[2] for r in docs) / sum(r[1] for r in docs)   # documents: after / before in the time model
         tasks = [dict(t) for t in op["tasks"]]
         tasks[1]["after_min"] = round(tasks[1]["before_min"] * review_ratio)
-        tasks[1]["after_basis"] = f"assumed: review and sign drafts; the {100 * (1 - review_ratio):.0f}% cut on documents in Exhibit 20"
+        tasks[1]["after_basis"] = f"assumed: review and sign the drafts, about {100 * review_ratio:.0f}% of the writing time"
         cs_before = sum(t["before_min"] for t in tasks)
         cs_after = sum(t["after_min"] for t in tasks)
         cs_day = cs_before - cs_after
@@ -288,8 +317,8 @@ def main():
         trow = "".join(f'<tr><td>{html.escape(t["task"])}</td><td>{html.escape(t["when"])}</td><td class="n">{t["before_min"]}</td>'
                        f'<td class="n">{t["after_min"]}</td><td class="n"><b>{t["before_min"] - t["after_min"]}</b></td>'
                        f'<td>{html.escape(t["before_basis"])}; after: {html.escape(t["after_basis"]).replace("assumed: ", "(assumed) ", 1)}</td></tr>' for t in tasks)
-        user_test = ('<div class="ex"><div class="et"><span class="n">Exhibit 18</span>'
-                     f'Case study, a solo physical therapy clinic in Mexico: about {cs_day} minutes a day of admin freed, {cs_before} today vs {cs_after} with PhysioTeam (initial estimate, n = 1)</div>'
+        user_test = ('<div class="ex demo-ex"><div class="et"><span class="n">Exhibit 18</span>'
+                     f'In the case-study clinic, admin drops from {cs_before} to {cs_after} minutes a day: about {cs_day} minutes freed, most of it the report hour before opening</div>'
                      '<table><tr><th>Task (per working day)</th><th>When</th><th class="n">Today, min</th><th class="n">With PhysioTeam, min</th>'
                      '<th class="n">Saved, min</th><th>Basis</th></tr>' + trow +
                      f'<tr class="total"><td>Total</td><td></td><td class="n">{cs_before}</td><td class="n">{cs_after}</td><td class="n">{cs_day}</td>'
@@ -299,18 +328,17 @@ def main():
                      f'<div class="take"><b>"{html.escape(UT["quote_time"])}"</b><br><b>"{html.escape(UT["quote"])}"</b>'
                      f' - {html.escape(UT["name"])}</div></div>')
         one_line = (f'Case study of a solo physical therapy clinic in Mexico (source: {html.escape(UT["name"])}; initial estimate, n = 1): '
-                    f'about {cs_day} minutes a day of admin freed, and about MXN {cs_rev:,} a month in impact from the clinic&#39;s 8:00 hour.')
-        slide_imp = (f'<div class="take"><b>"{html.escape(UT["quote"])}"</b><br>- {html.escape(UT["name"])}</div>'
-                     f'<ul style="font-size:.6em"><li>Booking {tasks[0]["before_min"]} → {tasks[0]["after_min"]} min a day · reports at 8:00 '
-                     f'{tasks[1]["before_min"]} → {tasks[1]["after_min"]} · finances after hours {tasks[2]["before_min"]} → {tasks[2]["after_min"]}</li>'
-                     f'<li><b>{cs_day} min a day</b> back ({cs_h_month:.0f} h a month) → the 8:00 hour becomes a consultation → '
-                     f'<b>{cs_consults} a month → MXN {cs_rev:,}</b></li>'
-                     f'<li>The source&#39;s best estimates; review times assumed; one clinic (n = 1)</li></ul>')
+                    f'about {cs_day} minutes a day of admin freed, and about MXN {cs_rev:,} a month in impact from one more billable hour a day.')
+        slide_imp = (f'<div class="flow"><div><b>{cs_day} min</b><span>of admin freed a day</span></div><i>→</i>'
+                     f'<div><b>1 h</b><span>billable hour a day</span></div><i>→</i>'
+                     f'<div><b>{cs_consults}</b><span>more consultations a month</span></div><i>→</i>'
+                     f'<div><b>MXN {cs_rev:,}</b><span>a month in impact</span></div></div>')
+        slide_quote = f'<div class="take"><b>"{html.escape(UT["quote"])}"</b><br>- {html.escape(UT["name"])}, source of the case study</div>'
     else:
         user_test = ('<div class="pending"><b>User test (to be completed with the therapist):</b> 40-minute session, screen shared and recorded. '
                      'Tasks: (A) three patient replies by hand vs with the team, timed; (B) review of a drafted evaluation vs the usual time; '
                      '(C) would the therapist send the doctor report as drafted; (D) the weekly results. Closing: hours saved, willingness to pay, one quote. '
-                     'Protocol and data sheet: <code>report/user_test_guide.md</code>. Results replace the stated assumptions in Exhibit 20.</div>')
+                     'Protocol and data sheet: <code>report/user_test_guide.md</code>. Results replace the stated assumptions in Exhibit 18.</div>')
         one_line = "A practicing therapist is testing it (results in section 6)."
         slide_imp = (f'<div class="pending">User test with a practicing therapist: results go here (quote, timings, ratings).</div>'
                      f'<ul style="font-size:.6em"><li>Refilled slots: MXN {rec_mxn:,} in the measured week</li>'
@@ -341,7 +369,7 @@ def main():
                f'{link(rec)}; {link(rec, "range_url", "range_label")}), about {rec["parttime_min_mxn"] / (tot[1] * fx):.0f}-{rec["parttime_max_mxn"] / (tot[1] * fx):.0f}× PhysioTeam&#39;s running cost '
                f'for one clinic, and a receptionist does not draft clinical forms. <b>Sources:</b> {link(C["whatsapp"])}; {link(C["hosting"])}; '
                f'{link(C["fx"])}, {C["fx"]["date"]}. {html.escape(C["hosting"]["scale_note"])}; {html.escape(C["whatsapp"]["note"])}.')
-    # Exhibit 19: the freed 8:00 hour becomes a paid consultation (rows labeled: best estimate / assumed / measured / sourced / calculated)
+    # Exhibit 19: the freed time becomes one more billable hour a day (rows labeled: best estimate / assumed / measured / sourced / calculated)
     run_mxn = tot[1] * fx
     net = cs_rev - run_mxn
     pt_price = C["price_mxn"]
@@ -351,13 +379,15 @@ def main():
     crow = lambda k, label, val, src: f'<tr><td>{k}</td><td>{label}</td><td class="n"><b>{val}</b></td><td>{src}</td></tr>'
     case_rows = [
         crow("a", "Minutes freed per working day", f"{cs_day} min", f'{L("best estimate")} {L("assumed")} Exhibit 18'),
-        crow("b", "Report work today at 8:00-9:00", f'{tasks[1]["before_min"]} min', f'{L("best estimate")} the clinic&#39;s usual routine'),
+        crow("b", "Report work today, 8:00-9:00, before opening", f'{tasks[1]["before_min"]} min', f'{L("best estimate")} the clinic&#39;s usual routine'),
+        crow("b1", "Billable hours a day today", op["hours_today"], f'{L("best estimate")} the case-study clinic'),
+        crow("b2", "Billable hours a day with PhysioTeam", op["hours_with"], f'{L("assumed")} the report hour becomes a consultation'),
         crow("c", "How the whole hour frees up", f'{tasks[1]["before_min"] - tasks[1]["after_min"]} + {tasks[1]["after_min"]} min',
              f'{L("assumed")} drafts are ready right after each session; the {tasks[1]["after_min"]} min of review fit into the '
              f'{tasks[0]["before_min"] - tasks[0]["after_min"]} min that booking frees during clinic hours, reviewed in short gaps between sessions ({L("assumed")})'),
         crow("d", "Working days a month", f"{cs_days}", f'{L("assumed")} Monday-Friday'),
         crow("e", "Price per consultation", f"MXN {price}", f'{L("sourced")} clinic price list'),
-        crow("f", "Extra consultations a month", f"{cs_consults}", f'{L("calculated")} one a day, since a ≥ 60 min; {L("assumed")} demand fills the 8:00 slot'),
+        crow("f", "Extra consultations a month", f"{cs_consults}", f'{L("calculated")} one a day, since a ≥ 60 min; {L("assumed")} demand fills the extra hour'),
         crow("g", "Extra revenue a month", f"MXN {cs_rev:,}", f'{L("calculated")} f × e'),
         crow("h", "Running cost a month", f"MXN {run_mxn:,.0f}", f'{L("measured")} AI + {L("sourced")} WhatsApp, hosting (Exhibit 12)'),
         crow("i", "Net gain a month", f"MXN {net:,.0f}", f'{L("calculated")} g - h; MXN {cs_rev - pt_price:,} if bought at MXN {pt_price} a month'),
@@ -375,7 +405,7 @@ def main():
     case_table = ('<table><tr><th></th><th>Input</th><th class="n">Value</th><th>Source</th></tr>' + "".join(case_rows) + "</table>"
                   f'<div class="src"><b>Reach (illustrative):</b> at least {th["count"]:,} physical therapists and related professionals work in Mexico '
                   f'({link(th)}; {html.escape(th["note"])}); at {cs_h_month:.0f} h a month each, about {th["count"] * cs_h_month:,.0f} hours a month. '
-                  f'<b>Clinic hours:</b> the app&#39;s simulated clinic opens at 11:00; the case rests on the clinic&#39;s 8:00 report hour, which PhysioTeam turns into a bookable slot.</div>')
+                  f'<b>Clinic hours:</b> the case-study clinic works 9:00-18:00; PhysioTeam extends its billable day to 8:00-18:00. The app&#39;s simulated clinic uses different hours (11:00-20:00).</div>')
     rep = {
         "REPO_VISIBILITY": "public repo" if vis == "public" else "private repo: zlisto added as collaborator",
         "K_WEEK_USD": usd(week_usd, 3), "K_WEEK_PATIENTS": str(patients), "K_MESSAGES": str(ap["messages"]),
@@ -387,7 +417,7 @@ def main():
         "Q_GROUNDED": f"{grounded_all:.0f}", "Q_EVAL_SECONDS": f"{ev['median_seconds']:.0f}", "Q_MEASURED": Q["measured"],
         "QUALITY_TABLE": qtab, "QUALITY_TABLE_SHORT": qtab_short,
         "X_BASE_HOURS": f"{before:.0f}", "X_AFTER_HOURS": f"{after:.1f}", "X_SAVED_HOURS": f"{saved:.0f}",
-        "X_BASE_CHART": base_chart, "TIME_TABLE": "\n".join(trows), "TIME_CHART": time_chart, "X_TIME_BASIS": basis,
+        "X_BASE_CHART": base_chart, "X_BASE_CHART_SLIDE": hbars([({"SOAP notes": "Session notes (SOAP)"}.get(n, n), hb, "") for n, hb, _ in sorted(chart_rows, key=lambda x: -x[1])], "h", width=420, label_w=170), "TIME_TABLE": "\n".join(trows), "TIME_CHART": time_chart, "X_TIME_BASIS": basis,
         "X_INBOUND": str(wa["inbound"]), "X_SESSIONS": str(wa["sessions_done"]),
         "X_RECOVERED_MXN": f"{rec_mxn:,}", "X_RECOVERED_MONTH": f"{rec_mxn * 4.3:,.0f}",
         "X_EXTRA_SESSIONS": f"{saved:.0f}", "X_EXTRA_MXN": f"{round(saved) * 400:,}",
@@ -397,11 +427,11 @@ def main():
         "T2_HA_USD": usd(t2_usd, 5), "T2_SECONDS": f"{t2_secs:.0f}",
         "TRACE1_TABLE": tr1, "TRACE2_TABLE": tr2, "RUNS_TABLE": runs_table,
         "CS_CHART": before_after([("Booking (WhatsApp)", tasks[0]["before_min"], tasks[0]["after_min"]),
-                                  ("Reports at 8:00", tasks[1]["before_min"], tasks[1]["after_min"]),
-                                  ("Finances after hours", tasks[2]["before_min"], tasks[2]["after_min"])], unit="min"),
+                                  ("Clinical reports", tasks[1]["before_min"], tasks[1]["after_min"]),
+                                  ("Finances after hours", tasks[2]["before_min"], tasks[2]["after_min"])], unit="min", width=355),
         "CASE_TABLE": case_table, "CS_NAME": html.escape(UT["name"]), "CS_MIN_DAY": str(cs_day), "CS_H_DAY": f"{cs_day / 60:.1f}",
         "CS_H_WEEK": f"{cs_day * 5 / 60:.0f}", "CS_H_MONTH": f"{cs_h_month:.0f}", "CS_CONSULTS": str(cs_consults), "CS_REV": f"{cs_rev:,}",
-        "CS_NET": f"{net:,.0f}", "CS_RETURN": f"{cs_rev / pt_price:.0f}", "CS_COST_H": f"{run_mxn / cs_h_month:,.1f}",
+        "CS_NET": f"{net:,.0f}", "CS_RETURN": f"{cs_rev / pt_price:.1f}", "CS_COST_H": f"{run_mxn / cs_h_month:,.1f}",
         "CS_BEFORE": str(cs_before), "CS_AFTER": str(cs_after), "CS_REPORT_BEFORE": str(tasks[1]["before_min"]),
         "CS_REPORT_AFTER": str(tasks[1]["after_min"]),
         "ORG_TABLE": "".join(org), "ORG_SRC": org_src, "K_TOTAL_USD": usd(tot[1], 2), "K_TOTAL_MXN": f"{tot[1] * fx:,.0f}",
@@ -411,7 +441,7 @@ def main():
         "CACHE_CHART": cache_chart(), "IMPACT_TABLE": impact, "DIAGRAM": diagram(),
         "D_MEASURED": D["measured"], "S_LOG": ", ".join(f"{k} {v}" for k, v in D["safety_log"].items()),
         "F_EVAL": D["files"]["eval_javier"], "F_PLAN": D["files"]["plan_javier"],
-        "USER_TEST": user_test, "USER_TEST_ONE_LINE": one_line, "SLIDE_IMPACT": slide_imp,
+        "USER_TEST": user_test, "USER_TEST_ONE_LINE": one_line, "SLIDE_IMPACT": slide_imp, "SLIDE_QUOTE": slide_quote if UT.get("quote") else "",
         **demos.markers(),
     }
     for name in ("report", "slides"):

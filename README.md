@@ -10,7 +10,7 @@ message to a doctor waits for the therapist's approval. A full clinic week is si
 - **Model:** `gpt-6-luna` through Portkey (PydanticAI agents, OpenAI Responses API). No other model or key is used.
 - **Report and slides:** `report/out/report.html` and `report/out/slides.html` (open with a double-click).
 - **Demo video (5 min):** submitted on Canvas with the report: a practicing physical therapist runs Demo 1 on the clinic's own computer; Demos 2 and 3 are traced step by step in the report.
-- **Impact (case study, initial estimate, n = 1):** using a case study of a solo physical therapy clinic in Mexico (source: physical therapist Juliana del Bosque), PhysioTeam frees about 111 minutes a day of admin; the clinic's 8:00 report hour becomes about 22 consultations a month, about MXN 8,800 a month in impact, against about MXN 183 a month of running cost (AI + WhatsApp + hosting). Details: report section 6.
+- **Impact (case study, initial estimate, n = 1):** using a case study of a solo physical therapy clinic in Mexico (source: physical therapist Juliana del Bosque), PhysioTeam frees about one billable hour a day of the therapist's time (111 minutes of admin a day): about 22 more consultations, about MXN 8,800 a month in impact, against about MXN 183 a month of running cost (AI + WhatsApp + hosting). Details: report section 6.
 - All patients, doctors, chats and notes are fictional.
 
 ## Run it locally (about 5 minutes)

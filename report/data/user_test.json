@@ -5,7 +5,7 @@
   "booking_by_hand": "about 2 minutes per patient, while treating another patient",
   "admin_time": "about 2 hours a day = 10 hours a week ≈ 40 hours a month (a full working day each week)",
   "ran": "the hard-to-book patient (late cancellation, fee waived, waitlist), session notes → evaluation and treatment plan, who owes money, the results of a week",
-  "not_measured": "stopwatch timings, the clinic's hours and demand for an 8:00 slot: the four-week pilot measures them (section 7)",
+  "not_measured": "stopwatch timings and demand for the extra billable hour: the four-week pilot measures them (section 7)",
   "quote_time": "More or less like two hours per day. That's like 10 hours per week… that I can use in another thing.",
   "quote": "This will be really useful for my daily practice and I will be more efficient … to focus on what's important. So my patients will be happier.",
   "quote_short": "This will be really useful for my daily practice… So my patients will be happier.",
@@ -32,10 +32,10 @@
         "after_basis": "assumed: ~1 min of approval taps (3 cards in Demo 1, Exhibit 5)"
       },
       {
-        "task": "Clinical reports (evaluations, SOAP notes, doctor reports)",
-        "when": "8:00-9:00, next morning",
+        "task": "Clinical reports (done before opening in the case-study clinic)",
+        "when": "before opening",
         "before_min": 60,
-        "before_basis": "source's estimate: ~1 hour a day, usually at 8:00",
+        "before_basis": "source's estimate: ~1 hour a day, 8:00-9:00, before the clinic opens",
         "after_min": 14,
         "after_basis": "assumed: review and sign drafts; same 77% cut as the documents in Exhibit 20"
       },
@@ -47,6 +47,8 @@
         "after_min": 5,
         "after_basis": "assumed: read the daily report (Exhibit 7)"
       }
-    ]
+    ],
+    "hours_today": "9 (9:00-18:00)",
+    "hours_with": "10 (8:00-18:00)"
   }
 }
