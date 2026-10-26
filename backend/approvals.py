@@ -23,12 +23,14 @@ def _book_plan(s: Session, p: dict) -> None:
     if not booked:
         return
     first = p["name"].split()[0]
-    when = "\n".join(f"- {store.nice(a['start'])}" for a in booked[:6])
-    more = f"\n…and {len(booked) - 6} more, 3 times a week." if len(booked) > 6 else ""
+    weeks = {store.dt(x["start"]).isocalendar()[:2] for x in booked}
+    per_week = max(1, round(len(booked) / len(weeks)))   # the plan's frequency, as booked
+    when ="\n".join(f"- {store.nice(a['start'])}" for a in booked[:6])
+    more = f"\n…and {len(booked) - 6} more, {per_week} times a week." if len(booked) > 6 else ""
     _say(s, p["id"], f"Hi {first}, your treatment plan is ready and your sessions are booked:\n{when}{more}\nYou'll get a reminder the day before each one.",
          f"Hola {first}, su plan está listo y sus sesiones quedaron agendadas:\n{when}{more}")
     s.add_message("ops", "system", "Operations Partner",
-                  f"Booked **{len(booked)} sessions** for {p['name']} (3x/week) from the approved plan, first on {store.nice(booked[0]['start'])}.",
+                  f"Booked **{len(booked)} sessions** for {p['name']} ({per_week}x/week) from the approved plan, first on {store.nice(booked[0]['start'])}.",
                   agent="ops_partner")
 
 

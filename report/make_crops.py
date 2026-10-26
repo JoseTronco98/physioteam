@@ -18,7 +18,7 @@ def side(parts, out, gap=24, labels=None):
     top = 54 if labels else 0
     im = Image.new("RGB", (w, h + top), "white")
     d = ImageDraw.Draw(im)
-    f = ImageFont.truetype(r"C:\Windows\Fonts\seguisb.ttf", 24)
+    f = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 24)
     x = 0
     for i, p in enumerate(parts):
         im.paste(p, (x, top))
@@ -41,3 +41,12 @@ crop("trace_costs", (565, 100, 1345, 1020)).save(S / "costs_tokens.png")
 if (S / "usertest_raw_frame.png").is_file():   # frame from the recorded call; only the cropped version is in the repo
     crop("usertest_raw_frame", (0, 133, 1755, 1066)).save(S / "usertest_approval.png")
 print("done")
+
+# the three demos from the user test, replayed (tools.demo_runs + tools.demo_shots)
+if (S / "demo1_whatsapp.png").is_file():
+    side([crop("demo1_whatsapp", (845, 250, 1330, 860)), crop("demo1_whatsapp", (845, 860, 1330, 1470))],
+         "demo1_combo.png", labels=["Valentina's WhatsApp", "(continued)"])
+    side([crop("demo2_whatsapp", (845, 185, 1330, 1000)), crop("demo2_health", (580, 240, 1250, 830))],
+         "demo2_combo.png", labels=["Javier's WhatsApp", "The Health Advisor, during and after the visit"])
+    side([crop("demo3_daily", (565, 100, 1345, 640)), crop("demo3_ops", (580, 980, 1330, 1320))],
+         "demo3_combo.png", labels=["Daily report", "\"How did the week go?\""])

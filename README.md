@@ -9,7 +9,7 @@ message to a doctor waits for her approval. A full clinic week is simulated so a
 - **Run it:** locally, in about 3 minutes (below). It is not hosted, so the course API key is never exposed online.
 - **Model:** `gpt-6-luna` through Portkey (PydanticAI agents, OpenAI Responses API). No other model or key is used.
 - **Report and slides:** `report/out/report.html` and `report/out/slides.html` (open with a double-click).
-- **Demo video (22 min):** submitted on Canvas with the report: a practicing physical therapist runs the three demos.
+- **Demo video (5 min):** submitted on Canvas with the report: a practicing physical therapist runs Demo 1 on her own computer; Demos 2 and 3 are traced step by step in the report.
 - All patients, doctors, chats and notes are fictional.
 
 ## Run it locally (about 3 minutes)
@@ -107,6 +107,7 @@ Each browser session has an AI budget (default $0.75) and the app a daily cap (d
 ```bash
 python -m tools.report_data report/data/report_data.json     # ~$0.07, ~7 min: 51 story steps + a simulated week
 python -m tools.eval_quality report/data/eval_quality.json   # ~$0.06, ~6 min: Clinical Scribe on 30 notes
+python -m tools.demo_runs report/data/demo_runs.json         # ~$0.013, ~3 min: the three user-test demos, every step traced
 python -m tests.stories_run                                  # all five stories end to end
 python report/fill.py && python report/build.py              # rebuild report.html and slides.html
 ```

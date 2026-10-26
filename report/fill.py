@@ -3,6 +3,7 @@
 Inputs (report/data/):  report_data.json  (tools/report_data.py)
                         eval_quality.json (tools/eval_quality.py)
                         user_test.json    (optional: the therapist's test; see user_test_guide.md)
+                        demo_runs.json    (tools/demo_runs.py: the three user-test demos, rendered by demos.py)
 Outputs: report/report.ready.html, report/slides.ready.html  → then build.py embeds the images.
 Run: python report/fill.py
 """
@@ -10,7 +11,11 @@ Run: python report/fill.py
 import html
 import json
 import re
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+import demos  # noqa: E402
 
 R = Path(__file__).parent
 D = json.loads((R / "data" / "report_data.json").read_text(encoding="utf-8"))
@@ -320,6 +325,7 @@ def main():
         "D_MEASURED": D["measured"], "S_LOG": ", ".join(f"{k} {v}" for k, v in D["safety_log"].items()),
         "F_EVAL": D["files"]["eval_javier"], "F_PLAN": D["files"]["plan_javier"],
         "USER_TEST": user_test, "USER_TEST_ONE_LINE": one_line, "SLIDE_IMPACT": slide_imp,
+        **demos.markers(),
     }
     for name in ("report", "slides"):
         text = (R / f"{name}.src.html").read_text(encoding="utf-8")

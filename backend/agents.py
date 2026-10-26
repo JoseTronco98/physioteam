@@ -2347,6 +2347,14 @@ async def patient_turn(s: Session, pid: str, text: str, run_id: str, attachment_
     if "red_flag" in p["flags"] and not p.get("red_flag_answered"):
         notes.append("This patient reported a possible emergency earlier. Lic. Ana handles it personally: do not discuss symptoms or "
                      "give any advice; if they mention it, say she has been notified and will contact them. Logistics are fine.")
+    # The contact's own coming bookings, so a slot they already hold is never mistaken for "just taken".
+    mine = sorted((a for a in c["appointments"].values() if a["patient_id"] == pid and a["start"] >= c["now"]
+                   and a["status"] in ("booked", "pending_approval")), key=lambda a: a["start"])[:4]
+    if mine:
+        notes.append("Their own coming bookings: " + "; ".join(
+            f"{store.nice(a['start'])} {a['service']} ("
+            + ("requested, waiting for Lic. Ana's confirmation" if a["status"] == "pending_approval" else "confirmed") + ")"
+            for a in mine) + ". These slots are theirs: never tell them one was taken.")
     off = open_offer(c, pid)
     if off:
         notes.append(f"We offered them the freed slot {store.nice(off['slot'])} from the waitlist. If this message accepts or declines it, call answer_slot_offer.")

@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
 <style>
   :root { --g:#29BA74; --gd:#197A56; --gdd:#03522D; --gl:#DCF3E7; --gll:#F1FAF5; --ink:#212427; --muted:#5F6368; --line:#D9D9D9; --soft:#F2F2F2;
-          --r-main-font: "Segoe UI", Arial, Helvetica, sans-serif; --r-heading-font: "Segoe UI", Arial, Helvetica, sans-serif;
+          --r-main-font: Arial, Helvetica, sans-serif; --r-heading-font: Arial, Helvetica, sans-serif;
           --r-main-color: #212427; --r-heading-color: #03522D; --r-link-color: #197A56; --r-main-font-size: 24px;
           --r-heading-text-transform: none; --r-heading-letter-spacing: 0; --r-heading-font-weight: 700; }
   .reveal .slides { text-align: left; }
@@ -47,6 +47,10 @@
   .cover p { color: #E6F5EC; font-size: .92em; }
   .cover .side { position: absolute; right: 50px; top: 170px; width: 400px; color: #fff; font-size: .62em; line-height: 1.55; }
   .cover .side b { color: #fff; }
+  .dgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .dcol { background: #F1FAF5; border-top: 5px solid var(--g); padding: 8px 10px; }
+  .dsteps { font-size: .5em; margin: 6px 0 4px 1.1em; line-height: 1.25; } .dsteps li { margin: 1px 0; }
+  .dkpi { font-size: .55em; color: var(--gdd); } .dkpi b { font-size: 1.25em; }
   .pending { border: 2px dashed #B8860B; background: #FFF8E6; padding: 8px 12px; font-size: .6em; }
   svg text { font-family: Arial, Helvetica, sans-serif; }
 </style>
@@ -140,13 +144,9 @@
 <!-- 6 · Demo -->
 <section>
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span class="on">Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
-  <h2>Five one-click stories show all 45 capabilities, from a patient's first message to the week's results</h2>
-  <div class="grid2">
-    <div><img class="shot" src="shots/wa_valentina.png" alt="WhatsApp view"><div class="cap">The hard-to-book patient: booking, late cancellation, fee argument, waitlist move</div></div>
-    <div><img class="shot" src="shots/folder_hector.png" alt="Patient folder"><div class="cap">A patient folder: evaluation, plan versions, one SOAP per session, reports, feedback</div></div>
-  </div>
-  <p style="font-size:.6em;margin-top:.6em"><b>Stories:</b> 1 the hard-to-book patient · 2 the referring doctor · 3 a new patient's month (incl. the review point) · 4 safety and edge cases · 5 running the clinic and the results</p>
-  <div class="src">Source: PhysioTeam therapist view (Therapist → Stories).</div><div class="pg">6</div>
+  <h2>The three demos the therapist ran, traced end to end: every message answered, every decision hers, ⟦DEMOS_USD⟧ of AI</h2>
+  ⟦SLIDE_DEMOS⟧
+  <div class="src">P = patient, T = therapist, C = clock. Replay of the user-test demos with tools/demo_runs.py (⟦DEMOS_MEASURED⟧); full step tables in report Exhibits 5-7.</div><div class="pg">6</div>
 </section>
 
 <!-- 7 · Quality + safety -->
