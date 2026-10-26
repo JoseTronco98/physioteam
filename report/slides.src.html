@@ -78,15 +78,15 @@
 <!-- 2 · Executive summary -->
 <section>
   <div class="tracker"><span class="on">Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span>Impact</span><span>Next</span></div>
-  <h2>A solo physical therapist gets about 2 hours a day back (10 a week, ~40 a month), keeps every decision, and pays ⟦K_MONTH_USD⟧ a month in AI</h2>
+  <h2>Case study (initial estimate, n = 1): PhysioTeam frees about ⟦CS_MIN_DAY⟧ minutes a day for a solo physical therapist, and the 8:00 hour becomes about MXN ⟦CS_REV⟧ a month</h2>
   <div class="kpis">
-    <div class="kpi"><b>2 h / day</b><span>back to the therapist: 10 h a week, ~40 h a month (the tester's estimate; model ⟦X_SAVED_HOURS⟧ h/week)</span></div>
-    <div class="kpi"><b>⟦K_WEEK_USD⟧</b><span>AI cost of a full measured clinic week</span></div>
+    <div class="kpi"><b>⟦CS_BEFORE⟧ → ⟦CS_AFTER⟧ min</b><span>admin a day, before → with PhysioTeam (Juliana del Bosque, PT: her best estimates)</span></div>
+    <div class="kpi"><b>MXN ⟦CS_REV⟧</b><span>a month from the freed 8:00 hour, vs MXN ⟦K_TOTAL_MXN⟧ running cost</span></div>
     <div class="kpi"><b>⟦Q_GROUNDED⟧%</b><span>of numbers in drafted forms found in the therapist's notes (30 notes)</span></div>
-    <div class="kpi"><b>8 / 8</b><span>safety tests passed</span></div>
+    <div class="kpi"><b>9 / 9</b><span>risks defended, each with a passing test</span></div>
   </div>
   <ul style="font-size:.98em;margin-top:.7em">
-    <li><b>Problem:</b> a one-room practice is also its own receptionist, biller and secretary: ~2 h a day of WhatsApp, forms and payments (the tester's estimate), mostly after hours</li>
+    <li><b>Problem:</b> a one-room practice is also its own receptionist, biller and secretary: about ⟦CS_BEFORE⟧ minutes a day of WhatsApp, forms and payments (the tester's best estimate), mostly at 8:00 and after closing</li>
     <li><b>Solution:</b> six agents and 58 tools run booking, policy, waitlist, payments, every clinical form and doctor report, on the clinic's templates</li>
     <li><b>Control:</b> every booking, charge, document and doctor message is an approval executed in code; safety rules run before any model</li>
     <li><b>Evidence:</b> ⟦USER_TEST_ONE_LINE⟧</li>
@@ -104,12 +104,12 @@
       <li>~25 patients × 3 sessions a week, all coordinated on the therapist's personal WhatsApp</li>
       <li>Prices, "can I come Thursday?", reminders, cancellations, "how much do I owe?", invoices</li>
       <li>Then a 7-section evaluation, a SOAP note per session, plans, doctor reports</li>
-      <li>~70% of PT patients don't finish their plan (WebPT); every empty hour is MXN 400-600</li>
-      <li>77-80 M WhatsApp users in Mexico: the channel patients already use</li>
+      <li>~70% of PT patients don't finish their plan (<a href="https://www.webpt.com/webinars/knock-out-patient-dropout-8-ways-to-increase-retention-and-revenue">WebPT</a>); every empty hour is MXN 400-600</li>
+      <li>~78 M WhatsApp users in Mexico: the channel patients already use</li>
     </ul>
   </div>
-  <div class="take" style="margin-top:.8em"><b>The physical therapist who tested it:</b> the three pains are booking over WhatsApp ("maybe two minutes per patient"), diagnosis and follow-up reports for referring doctors, and finances (who has paid, who owes the clinic): <b>about 2 hours a day, 10 hours a week</b>.</div>
-  <div class="src">Note: volumes measured in the simulated clinic week; minutes per task as in report Exhibit 20; the tester's own estimate is ~2 h a day. Source: PhysioTeam simulation; user test; WebPT; dplnews.com.</div><div class="pg">3</div>
+  <div class="take" style="margin-top:.8em"><b>The physical therapist who tested it:</b> the three pains are booking over WhatsApp ("maybe two minutes per patient"), diagnosis and follow-up reports for referring doctors, and finances (who has paid, who owes the clinic): <b>about ⟦CS_BEFORE⟧ minutes a day</b> by the tester's best estimate.</div>
+  <div class="src">Note: volumes measured in the simulated clinic week; minutes per task as in report Exhibit 20; the tester's best estimate is ~⟦CS_BEFORE⟧ min a day. Source: PhysioTeam simulation; user test; <a href="https://www.webpt.com/webinars/knock-out-patient-dropout-8-ways-to-increase-retention-and-revenue">WebPT</a>; <a href="https://dplnews.com/?p=153178">DPL News</a>.</div><div class="pg">3</div>
 </section>
 
 <!-- 4 · What's new -->
@@ -127,7 +127,7 @@
     <tr><td>Weekly results incl. AI cost</td><td class="c hb">◔</td><td class="c hb">◑</td><td class="c hb">◑</td><td class="c hb">○</td><td class="c hb">○</td><td class="c hb">●</td></tr>
   </table>
   <div class="take"><b>Honest gap:</b> no patient marketplace (Doctoralia) or certified EMR (Jane), and not yet on a real WhatsApp number.</div>
-  <div class="src">● full · ◕ most · ◑ partial · ◔ minimal · ○ none. Team assessment from public product pages, Oct 2026.</div><div class="pg">4</div>
+  <div class="src">● full · ◕ most · ◑ partial · ◔ minimal · ○ none. Author's assessment from public product pages, Oct 2026 (sources in report Exhibit 2).</div><div class="pg">4</div>
 </section>
 
 <!-- 5 · Agents -->
@@ -183,30 +183,30 @@
 <!-- 8 · Cost -->
 <section>
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span class="on">Cost</span><span>Impact</span><span>Next</span></div>
-  <h2>A whole clinic week costs ⟦K_WEEK_USD⟧; 10,000 clinics would cost ⟦K_10K_MONTH⟧ a month</h2>
+  <h2>One clinic runs on about MXN ⟦K_TOTAL_MXN⟧ a month, and the AI is only ⟦K_MONTH_USD⟧ of it</h2>
   <div class="grid2">
-    <div><p class="q">Measured week, by agent</p>⟦WEEK_TABLE_SHORT⟧<p class="q" style="margin-top:12px">Per clinic and at scale</p>⟦SCALE_TABLE⟧</div>
+    <div><p class="q">Measured week, by agent</p>⟦WEEK_TABLE_SHORT⟧<p class="q" style="margin-top:12px">AI only, per clinic and at scale</p>⟦SCALE_TABLE⟧</div>
     <div><img class="shot" src="shots/costs_tokens.png" alt="Costs and safety screen" style="width:auto;max-width:100%;max-height:390px"><div class="cap">The app meters itself: spend per agent against the caps, and token counts as reported by the API</div></div>
   </div>
-  <div class="take"><b>How cost was cut without hurting quality:</b> ⟦K_CACHED⟧% of input from cache (~59% saving, same output in the A/B) · ⟦K_CODE_MSGS_SHORT⟧ of outgoing patient messages sent by code at zero tokens · typical run ⟦T1_USD⟧ (a booking) to ⟦T2_USD⟧ (evaluation + plan)</div>
+  <div class="take"><b>Full running cost per clinic: ⟦K_TOTAL_USD⟧ (MXN ⟦K_TOTAL_MXN⟧) a month</b> = AI ⟦K_MONTH_USD⟧ + WhatsApp templates ⟦K_WA_USD⟧ + hosting ⟦K_HOST_USD⟧, i.e. MXN ⟦K_COST_PER_HOUR_MXN⟧ per hour of the therapist's time saved, vs about MXN ⟦K_RECEP_MXN⟧ for a part-time receptionist.<br><b>How cost was cut without hurting quality:</b> ⟦K_CACHED⟧% of input from cache (~59% saving, same output in the A/B) · ⟦K_CODE_MSGS_SHORT⟧ of outgoing patient messages sent by code at zero tokens · typical run ⟦T1_USD⟧ (a booking) to ⟦T2_USD⟧ (evaluation + plan)</div>
   <div class="src">Measured on every model call at course prices ($0.10 / $0.01 cached / $0.50 output per M tokens); simulator bots excluded. Source: tools/report_data.py, ⟦D_MEASURED⟧.</div><div class="pg">8</div>
 </section>
 
 <!-- 9 · Impact -->
 <section>
   <div class="tracker"><span>Summary</span><span>Problem</span><span>What's new</span><span>Agents</span><span>Demo</span><span>Quality</span><span>Cost</span><span class="on">Impact</span><span>Next</span></div>
-  <h2>The physical therapist gets back about 2 hours a day (~40 a month) and refilled slots, for less than one session's price a year</h2>
+  <h2>Case study: Juliana del Bosque, PT (initial estimate, n = 1): ⟦CS_MIN_DAY⟧ minutes a day back, and the 8:00 hour becomes about MXN ⟦CS_REV⟧ a month</h2>
   <div class="grid2">
-    <div><img class="shot" src="shots/usertest_approval.png" alt="User test"><div class="cap">The user test: a practicing physical therapist runs PhysioTeam on the clinic's own computer (recorded call; the demo video)</div></div>
+    <div><p class="q">Minutes a day: today vs with PhysioTeam</p>⟦CS_CHART⟧</div>
     <div>⟦SLIDE_IMPACT⟧</div>
   </div>
   <div class="kpis" style="margin-top:.8em">
-    <div class="kpi"><b>2 h</b><span>a day back to patient care (the tester's estimate)</span></div>
-    <div class="kpi"><b>10 h</b><span>a week: a full clinic day (model ⟦X_SAVED_HOURS⟧ h)</span></div>
-    <div class="kpi"><b>~40 h</b><span>a month for one solo clinic owner</span></div>
-    <div class="kpi"><b>⟦K_MONTH_USD⟧</b><span>AI cost per clinic per month</span></div>
+    <div class="kpi"><b>⟦CS_MIN_DAY⟧ min</b><span>a day freed (⟦CS_H_MONTH⟧ h a month)</span></div>
+    <div class="kpi"><b>⟦CS_CONSULTS⟧</b><span>8:00 consultations a month (demand assumed)</span></div>
+    <div class="kpi"><b>MXN ⟦CS_REV⟧</b><span>extra revenue a month at MXN 400</span></div>
+    <div class="kpi"><b>MXN ⟦CS_NET⟧</b><span>net, after MXN ⟦K_TOTAL_MXN⟧ running cost (MXN ⟦CS_COST_H⟧ per hour freed)</span></div>
   </div>
-  <div class="src">Note: weekly volumes measured; minutes per task are ⟦X_TIME_BASIS⟧. Source: PhysioTeam simulation; recorded user test with a practicing physical therapist (the demo video).</div><div class="pg">9</div>
+  <div class="src">Source: Juliana del Bosque's best estimates (one practitioner); review times and demand assumed; report Exhibits 18-19.</div><div class="pg">9</div>
 </section>
 
 <!-- 10 · Next -->
@@ -215,7 +215,8 @@
   <h2>Next: connect the clinic's WhatsApp number and run a four-week pilot that measures hours, refilled slots and plan completion</h2>
   <table>
     <tr><th>Limit today</th><th>Next step</th></tr>
-    <tr><td>Not on a real WhatsApp number (Cloud API channel built and tested locally)</td><td>Register the clinic number; four-week pilot vs the four weeks before</td></tr>
+    <tr><td>Not on a real WhatsApp number (Cloud API channel built and tested locally)</td><td>Register the clinic number; four-week pilot: stopwatch timings and 8:00 consultations booked vs the four weeks before</td></tr>
+    <tr><td>Impact is an initial estimate from one case (n = 1)</td><td>Two or three more solo practices after the pilot</td></tr>
     <tr><td>Fictional data written to the clinic's forms</td><td>Run on the therapist's real, consented notes</td></tr>
     <tr><td>Text only; English replies in this build</td><td>Voice-note dictation; re-enable Spanish</td></tr>
     <tr><td>No calendar or invoicing integration</td><td>Google Calendar, CFDI invoicing</td></tr>
@@ -225,7 +226,7 @@
     <div class="kpi"><b>5</b><span>one-click stories, one per real situation</span></div>
     <div class="kpi"><b>45</b><span>capabilities, each mapped to a story step</span></div>
     <div class="kpi"><b>⟦K_STORIES_USD⟧</b><span>AI cost to play all 51 steps</span></div>
-    <div class="kpi"><b>~3 min</b><span>to run it locally: Python only</span></div>
+    <div class="kpi"><b>~5 min</b><span>to run it locally: Python only</span></div>
   </div>
   <div class="take"><b>Try it:</b> <a href="https://github.com/JoseTronco98/physioteam" style="color:inherit;text-decoration:underline">https://github.com/JoseTronco98/physioteam</a> (⟦REPO_VISIBILITY⟧) · <code>pip install -r requirements.txt</code> · <code>python run.py</code> → Therapist → Stories. Every number here regenerates with <code>tools/report_data.py</code>, <code>tools/eval_quality.py</code> and <code>tools/demo_runs.py</code> (report, Appendix A).</div>
   <div class="src">Source: report section 7 and Appendix A.</div><div class="pg">10</div>

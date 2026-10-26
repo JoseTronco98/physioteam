@@ -1,0 +1,36 @@
+{
+  "fx": {
+    "mxn_per_usd": 18.493,
+    "date": "2026-10-16",
+    "label": "Banxico FIX",
+    "url": "https://www.banxico.org.mx/tipcamb/tipCamMIAction.do"
+  },
+  "whatsapp": {
+    "utility_usd": 0.0085,
+    "label": "Meta WhatsApp Business Platform, per-message pricing (Mexico utility rate, about)",
+    "url": "https://developers.facebook.com/docs/whatsapp/pricing",
+    "note": "replies inside the 24-hour service window are free; reminders and rating requests are counted as paid utility templates (conservative)"
+  },
+  "hosting": {
+    "starter_usd": 7.0,
+    "scale_usd_per_clinic": 1.0,
+    "label": "Render pricing (Starter instance)",
+    "url": "https://render.com/pricing",
+    "scale_note": "Assumed: at 100+ clinics, one US$25 Standard instance serves about 25 clinics"
+  },
+  "receptionist": {
+    "fulltime_mxn": 7030,
+    "parttime_mxn": 3515,
+    "label": "DataMéxico, receptionists, average monthly wage, Q1 2026",
+    "url": "https://www.economia.gob.mx/datamexico/es/profile/occupation/recepcionistas-trabajadores-que-brindan-informacion-y-telefonistas",
+    "range_label": "Paylab Mexico: 80% earn MXN 8,417-15,962 full time",
+    "range_url": "https://www.paylab.com/mx/salarios/administracion/recepcionista?lang=es"
+  },
+  "therapists_mx": {
+    "count": 3360,
+    "label": "DataMéxico, physical therapists, audiologists and speech therapists employed, Q1 2026",
+    "url": "https://www.economia.gob.mx/datamexico/es/profile/occupation/fisioterapeutas-audiologos-y-logopedas",
+    "note": "a lower bound: the survey groups three professions and misses many self-employed therapists"
+  },
+  "price_mxn": 500
+}

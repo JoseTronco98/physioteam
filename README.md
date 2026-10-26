@@ -3,16 +3,17 @@
 **A six-agent AI team that runs the back office of a solo physical therapy clinic on WhatsApp.** Patients write to the
 clinic; the therapist talks to two lead agents, an **Operations Partner** (agenda, money, patients) and a **Health
 Advisor** (evaluations, SOAP notes, treatment plans, doctors), each with specialists. Every booking, charge, document and
-message to a doctor waits for her approval. A full clinic week is simulated so anyone can try it in minutes.
+message to a doctor waits for the therapist's approval. A full clinic week is simulated so anyone can try it in minutes.
 
 - **Repo:** https://github.com/JoseTronco98/physioteam (public)
-- **Run it:** locally, in about 3 minutes (below). It is not hosted, so the course API key is never exposed online.
+- **Run it:** locally, in about 5 minutes (below; a fresh install takes ~4). It is not hosted, so the course API key is never exposed online.
 - **Model:** `gpt-6-luna` through Portkey (PydanticAI agents, OpenAI Responses API). No other model or key is used.
 - **Report and slides:** `report/out/report.html` and `report/out/slides.html` (open with a double-click).
-- **Demo video (5 min):** submitted on Canvas with the report: a practicing physical therapist runs Demo 1 on her own computer; Demos 2 and 3 are traced step by step in the report.
+- **Demo video (5 min):** submitted on Canvas with the report: a practicing physical therapist runs Demo 1 on the clinic's own computer; Demos 2 and 3 are traced step by step in the report.
+- **Impact (case study, initial estimate, n = 1):** for one solo physical therapist (Juliana del Bosque, PT), about 112 minutes a day freed by her best estimates; the 8:00 report hour becomes about 22 consultations a month, MXN 8,800, against about MXN 183 a month of running cost (AI + WhatsApp + hosting). Details: report section 6.
 - All patients, doctors, chats and notes are fictional.
 
-## Run it locally (about 3 minutes)
+## Run it locally (about 5 minutes)
 
 Requirements: **Python 3.11 or newer** (tested on 3.12). No Node.js: the React front end is prebuilt in `frontend/dist`.
 

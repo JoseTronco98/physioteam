@@ -20,6 +20,7 @@ import demos  # noqa: E402
 R = Path(__file__).parent
 D = json.loads((R / "data" / "report_data.json").read_text(encoding="utf-8"))
 Q = json.loads((R / "data" / "eval_quality.json").read_text(encoding="utf-8"))
+C = json.loads((R / "data" / "costs.json").read_text(encoding="utf-8"))   # sourced prices: WhatsApp, hosting, FX, receptionist
 UT = json.loads((R / "data" / "user_test.json").read_text(encoding="utf-8")) if (R / "data" / "user_test.json").is_file() else {}
 LABEL = {"patient_success": "Patient Success", "ops_partner": "Operations Partner", "health_advisor": "Health Advisor",
          "finance_ops": "Finance Ops", "clinical_scribe": "Clinical Scribe", "imaging_reader": "Imaging Reader", "router": "Router"}
@@ -52,8 +53,9 @@ def hbars(rows, unit="h", width=560, color=G, max_v=None, label_w=190):
     return "".join(out)
 
 
-def before_after(rows, width=560):
-    """rows: [(label, before_h, after_h)] -> paired bars."""
+def before_after(rows, width=560, unit="h"):
+    """rows: [(label, before, after)] -> paired bars (unit "h" or "min")."""
+    fmt = (lambda v: f"{v:.1f} h") if unit == "h" else (lambda v: f"{v:.0f} min")
     h = 34 * len(rows) + 34
     mx = max(b for _, b, _ in rows) or 1
     lw = 150
@@ -65,9 +67,9 @@ def before_after(rows, width=560):
         wb, wa = (width - lw - 60) * b / mx, (width - lw - 60) * a / mx
         out.append(f'<text x="{lw - 8}" y="{y + 18}" text-anchor="end" font-size="11" fill="#212427">{html.escape(lab)}</text>')
         out.append(f'<rect x="{lw}" y="{y}" width="{max(wb, 1):.1f}" height="13" fill="#B9B9B9"/>'
-                   f'<text x="{lw + wb + 5:.1f}" y="{y + 11}" font-size="10" fill="#5F6368">{b:.1f} h</text>')
+                   f'<text x="{lw + wb + 5:.1f}" y="{y + 11}" font-size="10" fill="#5F6368">{fmt(b)}</text>')
         out.append(f'<rect x="{lw}" y="{y + 15}" width="{max(wa, 1):.1f}" height="13" fill="{G}"/>'
-                   f'<text x="{lw + wa + 5:.1f}" y="{y + 26}" font-size="10" font-weight="700" fill="{GDD}">{a:.1f} h</text>')
+                   f'<text x="{lw + wa + 5:.1f}" y="{y + 26}" font-size="10" font-weight="700" fill="{GDD}">{fmt(a)}</text>')
     out.append("</svg>")
     return "".join(out)
 
@@ -269,24 +271,42 @@ def main():
     vis = UT.get("repo_visibility", "public")
     if UT.get("quote"):
         # the recorded session with the therapist (the demo video is this session, edited)
-        ut_rows = [("The tester's three biggest admin pains", UT.get("pains")),
-                   ("A booking over WhatsApp, by hand", UT.get("booking_by_hand")),
-                   ("Time those three tasks take today", UT.get("admin_time")),
-                   ("What the tester ran in PhysioTeam", UT.get("ran")),
-                   ("Not measured in this session", UT.get("not_measured"))]
+        # case study (n = 1): the tester's best estimates of her operation, my assumptions labeled
+        op = UT["operation"]
+        docs = [r for r in chart_rows if r[0] not in ("Patient WhatsApp messages", "Reminders and confirmations")]
+        review_ratio = sum(r[2] for r in docs) / sum(r[1] for r in docs)   # documents: after / before in the time model
+        tasks = [dict(t) for t in op["tasks"]]
+        tasks[1]["after_min"] = round(tasks[1]["before_min"] * review_ratio)
+        tasks[1]["after_basis"] = f"assumed: review and sign drafts; the {100 * (1 - review_ratio):.0f}% cut on documents in Exhibit 20"
+        cs_before = sum(t["before_min"] for t in tasks)
+        cs_after = sum(t["after_min"] for t in tasks)
+        cs_day = cs_before - cs_after
+        cs_days, price = op["days_per_month"], op["price_mxn"]
+        cs_h_month = cs_day * cs_days / 60
+        cs_consults = cs_days if cs_day >= 60 else 0
+        cs_rev = cs_consults * price
+        trow = "".join(f'<tr><td>{html.escape(t["task"])}</td><td>{html.escape(t["when"])}</td><td class="n">{t["before_min"]}</td>'
+                       f'<td class="n">{t["after_min"]}</td><td class="n"><b>{t["before_min"] - t["after_min"]}</b></td>'
+                       f'<td>{html.escape(t["before_basis"])}; after: {html.escape(t["after_basis"]).replace("assumed: ", "(assumed) ", 1)}</td></tr>' for t in tasks)
         user_test = ('<div class="ex"><div class="et"><span class="n">Exhibit 18</span>'
-                     f'User test: {html.escape(UT.get("session", ""))}</div>'
-                     '<table><tr><th>Measure</th><th>Result</th></tr>' +
-                     "".join(f"<tr><td>{a}</td><td><b>{html.escape(str(b))}</b></td></tr>" for a, b in ut_rows if b) +
-                     "</table>"
+                     f'Case study, {html.escape(UT["name"])}: about {cs_day} minutes a day back, {cs_before} today vs {cs_after} with PhysioTeam (initial estimate, n = 1)</div>'
+                     '<table><tr><th>Task (per working day)</th><th>When</th><th class="n">Today, min</th><th class="n">With PhysioTeam, min</th>'
+                     '<th class="n">Saved, min</th><th>Basis</th></tr>' + trow +
+                     f'<tr class="total"><td>Total</td><td></td><td class="n">{cs_before}</td><td class="n">{cs_after}</td><td class="n">{cs_day}</td>'
+                     f'<td>{cs_day / 60:.1f} h a day · {cs_day * 5 / 60:.1f} h a week · {cs_h_month:.0f} h a month ({cs_days} days)</td></tr></table>'
+                     f'<div class="src"><b>Method:</b> {html.escape(op["source_note"])}, after running the three demos herself on a recorded '
+                     f'26-minute call (the 5-minute demo video is cut from it). <b>Limits:</b> one practitioner (n = 1); the "today" minutes are her best estimates, the '
+                     f'"with PhysioTeam" minutes are the author&#39;s assumptions; {html.escape(UT.get("not_measured", ""))}.</div>'
                      f'<div class="take"><b>"{html.escape(UT["quote_time"])}"</b><br><b>"{html.escape(UT["quote"])}"</b>'
-                     ' - the therapist who tested PhysioTeam</div></div>')
-        one_line = f'A practicing therapist ran it on a recorded call (the demo video): "{html.escape(UT["quote_short"])}"' 
-        slide_imp = (f'<div class="take"><b>"{html.escape(UT["quote"])}"</b><br>- the physical therapist who tested it</div>'
-                     f'<ul style="font-size:.6em"><li>The tester&#39;s estimate today: <b>~2 h a day</b> on booking, reports and finances '
-                     f'= <b>10 h a week ≈ 40 h a month</b>; our measured-volume model frees {saved:.0f} h a week</li>'
-                     f'<li>Booking by hand: {html.escape(UT.get("booking_by_hand", ""))}; with PhysioTeam: one tap on an approval card</li>'
-                     f'<li>Refilled slots: MXN {rec_mxn:,} in the measured week</li></ul>')
+                     f' - {html.escape(UT["name"])}</div></div>')
+        one_line = (f'Case study with {html.escape(UT["name"])} (n = 1, initial estimate): about {cs_day} minutes a day back; the freed 8:00 hour '
+                    f'becomes a paid consultation, about MXN {cs_rev:,} a month.')
+        slide_imp = (f'<div class="take"><b>"{html.escape(UT["quote"])}"</b><br>- {html.escape(UT["name"])}</div>'
+                     f'<ul style="font-size:.6em"><li>Booking {tasks[0]["before_min"]} → {tasks[0]["after_min"]} min a day · reports at 8:00 '
+                     f'{tasks[1]["before_min"]} → {tasks[1]["after_min"]} · finances after hours {tasks[2]["before_min"]} → {tasks[2]["after_min"]}</li>'
+                     f'<li><b>{cs_day} min a day</b> back ({cs_h_month:.0f} h a month) → the 8:00 hour becomes a consultation → '
+                     f'<b>{cs_consults} a month → MXN {cs_rev:,}</b></li>'
+                     f'<li>Her best estimates; review times assumed; one practitioner (n = 1)</li></ul>')
     else:
         user_test = ('<div class="pending"><b>User test (to be completed with the therapist):</b> 40-minute session, screen shared and recorded. '
                      'Tasks: (A) three patient replies by hand vs with the team, timed; (B) review of a drafted evaluation vs the usual time; '
@@ -300,6 +320,63 @@ def main():
     lat_p = sorted(x["seconds"] for x in st["steps"] if x["actor"] == "patient" and x["usd"] > 0)
     lat_t = sorted(x["seconds"] for x in st["steps"] if x["actor"] == "you" and x["usd"] > 0)
     code_share = round(100 * wa["outbound_code"] / max(1, wa["outbound_code"] + wa["outbound_model"]))
+    # organization-wide running cost per clinic (monthly): AI measured + WhatsApp templates + hosting, in USD and MXN
+    fx = C["fx"]["mxn_per_usd"]
+    link = lambda d, k="url", t="label": f'<a href="{d[k]}">{html.escape(d[t])}</a>'
+    wa_msgs = (wa["reminders"] + wa["feedback_ratings"]) * 4.3
+    wa_usd = wa_msgs * C["whatsapp"]["utility_usd"]
+    hours_month = cs_h_month if UT.get("quote") else saved * 4.3
+    cols = [(1, C["hosting"]["starter_usd"]), (100, C["hosting"]["scale_usd_per_clinic"]), (10_000, C["hosting"]["scale_usd_per_clinic"])]
+    tot = {n: month + wa_usd + h for n, h in cols}
+    org = ['<table><tr><th>Per clinic, per month</th><th>Basis</th>' + "".join(f'<th class="n">{n:,} clinic{"s" if n > 1 else ""}</th>' for n, _ in cols) + "</tr>",
+           f'<tr><td>AI (all six agents)</td><td>measured week × 4.3</td>' + "".join(f'<td class="n">{usd(month, 2)}</td>' for _ in cols) + "</tr>",
+           f'<tr><td>WhatsApp templates (reminders, rating requests)</td><td>{wa_msgs:,.0f} messages × US${C["whatsapp"]["utility_usd"]} (sourced); replies free</td>'
+           + "".join(f'<td class="n">{usd(wa_usd, 2)}</td>' for _ in cols) + "</tr>",
+           f'<tr><td>Hosting</td><td>Starter instance (sourced); shared at scale (assumed)</td>' + "".join(f'<td class="n">{usd(h, 2)}</td>' for _, h in cols) + "</tr>",
+           f'<tr class="total"><td>Total per clinic</td><td>US$ · MXN at {fx:.2f}</td>' + "".join(f'<td class="n">{usd(tot[n], 2)} · MXN {tot[n] * fx:,.0f}</td>' for n, _ in cols) + "</tr>",
+           f'<tr><td>All clinics, per month</td><td></td>' + "".join(f'<td class="n">{usd(tot[n] * n, 0)}</td>' for n, _ in cols) + "</tr>",
+           f'<tr><td>Cost per hour of the therapist&#39;s time saved</td><td>total ÷ {hours_month:.0f} h saved a month</td>'
+           + "".join(f'<td class="n">MXN {tot[n] * fx / hours_month:,.1f}</td>' for n, _ in cols) + "</tr></table>"]
+    rec = C["receptionist"]
+    org_src = (f'<b>Current method:</b> a part-time receptionist costs about MXN {rec["parttime_mxn"]:,} a month (half the average full-time wage, '
+               f'{link(rec)}; {link(rec, "range_url", "range_label")}), about {rec["parttime_mxn"] / (tot[1] * fx):.0f}× PhysioTeam&#39;s running cost '
+               f'for one clinic, and a receptionist does not draft clinical forms. <b>Sources:</b> {link(C["whatsapp"])}; {link(C["hosting"])}; '
+               f'{link(C["fx"])}, {C["fx"]["date"]}. {html.escape(C["hosting"]["scale_note"])}; {html.escape(C["whatsapp"]["note"])}.')
+    # Exhibit 19: the freed 8:00 hour becomes a paid consultation (rows labeled: best estimate / assumed / measured / sourced / calculated)
+    run_mxn = tot[1] * fx
+    net = cs_rev - run_mxn
+    pt_price = C["price_mxn"]
+    evenings = tasks[2]["before_min"] - tasks[2]["after_min"]
+    th = C["therapists_mx"]
+    L = lambda t: f'<span class="chip">{t}</span>'
+    crow = lambda k, label, val, src: f'<tr><td>{k}</td><td>{label}</td><td class="n"><b>{val}</b></td><td>{src}</td></tr>'
+    case_rows = [
+        crow("a", "Minutes freed per working day", f"{cs_day} min", f'{L("best estimate")} {L("assumed")} Exhibit 18'),
+        crow("b", "Report work today at 8:00-9:00", f'{tasks[1]["before_min"]} min', f'{L("best estimate")} her usual habit'),
+        crow("c", "How the whole hour frees up", f'{tasks[1]["before_min"] - tasks[1]["after_min"]} + {tasks[1]["after_min"]} min',
+             f'{L("assumed")} drafts are ready right after each session; the {tasks[1]["after_min"]} min of review fit into the '
+             f'{tasks[0]["before_min"]} min that booking frees during clinic hours'),
+        crow("d", "Working days a month", f"{cs_days}", f'{L("assumed")} Monday-Friday'),
+        crow("e", "Price per consultation", f"MXN {price}", f'{L("sourced")} clinic price list'),
+        crow("f", "Extra consultations a month", f"{cs_consults}", f'{L("calculated")} one a day, since a ≥ 60 min; {L("assumed")} demand fills the 8:00 slot'),
+        crow("g", "Extra revenue a month", f"MXN {cs_rev:,}", f'{L("calculated")} f × e'),
+        crow("h", "Running cost a month", f"MXN {run_mxn:,.0f}", f'{L("measured")} AI + {L("sourced")} WhatsApp, hosting (Exhibit 12)'),
+        crow("i", "Net gain a month", f"MXN {net:,.0f}", f'{L("calculated")} g - h; MXN {cs_rev - pt_price:,} if bought at MXN {pt_price} a month'),
+        crow("j", "Return on a MXN 500 price", f"{cs_rev / pt_price:.1f}×", f'{L("calculated")} g ÷ price ({L("assumed")} price, section 7)'),
+        crow("k", "Cost per hour freed", f"MXN {run_mxn / cs_h_month:,.1f}", f'{L("calculated")} h ÷ {cs_h_month:.0f} h a month'),
+        crow("l", "After-hours time back (finances)", f"{evenings * cs_days / 60:.0f} h a month", f'{L("best estimate")} {evenings} min a day, not counted as revenue'),
+        crow("m", "Current method: part-time receptionist", f'MXN {C["receptionist"]["parttime_mxn"]:,}', f'{L("sourced")} {link(C["receptionist"])}; covers booking, not clinical reports'),
+    ]
+    org.insert(-1, f'<tr><td><i>Illustrative, if other clinics resemble the case study:</i> extra revenue, all clinics</td><td>MXN {cs_rev:,} per clinic (Exhibit 19)</td>'
+               + "".join(f'<td class="n">MXN {cs_rev * n:,.0f}</td>' for n, _ in cols) + "</tr>")
+    org.insert(-1, '<tr class="total"><td><i>Illustrative:</i> net a month, all clinics</td><td>extra revenue - running cost</td>'
+               + "".join(f'<td class="n">MXN {(cs_rev - tot[n] * fx) * n:,.0f}</td>' for n, _ in cols) + "</tr>")
+    scale_rows = "".join(f'<tr><td>{n:,}</td><td class="n">MXN {cs_rev * n:,.0f}</td><td class="n">MXN {tot[n] * fx * n:,.0f}</td>'
+                         f'<td class="n">MXN {(cs_rev - tot[n] * fx) * n:,.0f}</td></tr>' for n in (1, 100, 10_000))
+    case_table = ('<table><tr><th></th><th>Input</th><th class="n">Value</th><th>Source</th></tr>' + "".join(case_rows) + "</table>"
+                  f'<div class="src"><b>Reach (illustrative):</b> at least {th["count"]:,} physical therapists and related professionals work in Mexico '
+                  f'({link(th)}; {html.escape(th["note"])}); at {cs_h_month:.0f} h a month each, about {th["count"] * cs_h_month:,.0f} hours a month. '
+                  f'<b>Clinic hours:</b> the app&#39;s simulated clinic opens at 11:00; the case rests on her 8:00 report hour, which PhysioTeam turns into a bookable slot.</div>')
     rep = {
         "REPO_VISIBILITY": "public repo" if vis == "public" else "private repo: zlisto added as collaborator",
         "K_WEEK_USD": usd(week_usd, 3), "K_WEEK_PATIENTS": str(patients), "K_MESSAGES": str(ap["messages"]),
@@ -320,6 +397,17 @@ def main():
         "T1_SLOT": t1_slot, "T1_USD": usd(t1_usd, 5), "T2_USD": usd(steps[("newpatient", "notes")]["usd"], 4),
         "T2_HA_USD": usd(t2_usd, 5), "T2_SECONDS": f"{t2_secs:.0f}",
         "TRACE1_TABLE": tr1, "TRACE2_TABLE": tr2, "RUNS_TABLE": runs_table,
+        "CS_CHART": before_after([("Booking (WhatsApp)", tasks[0]["before_min"], tasks[0]["after_min"]),
+                                  ("Reports at 8:00", tasks[1]["before_min"], tasks[1]["after_min"]),
+                                  ("Finances after hours", tasks[2]["before_min"], tasks[2]["after_min"])], unit="min"),
+        "CASE_TABLE": case_table, "CS_NAME": html.escape(UT["name"]), "CS_MIN_DAY": str(cs_day), "CS_H_DAY": f"{cs_day / 60:.1f}",
+        "CS_H_WEEK": f"{cs_day * 5 / 60:.0f}", "CS_H_MONTH": f"{cs_h_month:.0f}", "CS_CONSULTS": str(cs_consults), "CS_REV": f"{cs_rev:,}",
+        "CS_NET": f"{net:,.0f}", "CS_RETURN": f"{cs_rev / pt_price:.0f}", "CS_COST_H": f"{run_mxn / cs_h_month:,.1f}",
+        "CS_BEFORE": str(cs_before), "CS_AFTER": str(cs_after), "CS_REPORT_BEFORE": str(tasks[1]["before_min"]),
+        "CS_REPORT_AFTER": str(tasks[1]["after_min"]),
+        "ORG_TABLE": "".join(org), "ORG_SRC": org_src, "K_TOTAL_USD": usd(tot[1], 2), "K_TOTAL_MXN": f"{tot[1] * fx:,.0f}",
+        "K_AI_SHARE": f"{100 * month / tot[1]:.0f}", "K_COST_PER_HOUR_MXN": f"{tot[1] * fx / hours_month:,.1f}",
+        "K_WA_USD": usd(wa_usd, 2), "K_HOST_USD": usd(C["hosting"]["starter_usd"], 0), "K_RECEP_MXN": f"{rec['parttime_mxn']:,}",
         "WEEK_TABLE": week_rows(), "WEEK_TABLE_SHORT": week_rows(short=True), "SCALE_TABLE": "\n".join(scale),
         "CACHE_CHART": cache_chart(), "IMPACT_TABLE": impact, "DIAGRAM": diagram(),
         "D_MEASURED": D["measured"], "S_LOG": ", ".join(f"{k} {v}" for k, v in D["safety_log"].items()),
