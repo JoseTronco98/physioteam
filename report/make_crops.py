@@ -50,3 +50,6 @@ if (S / "demo1_whatsapp.png").is_file():
          "demo2_combo.png", labels=["Javier's WhatsApp", "The Health Advisor, during and after the visit"])
     side([crop("demo3_daily", (565, 100, 1345, 640)), crop("demo3_ops", (580, 980, 1330, 1320))],
          "demo3_combo.png", labels=["Daily report", "\"How did the week go?\""])
+
+# slide 7: one readable crop of the prompt injection being blocked
+crop("wa_tom", (850, 255, 1325, 555)).save(S / "safety_injection.png")

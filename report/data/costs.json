@@ -24,7 +24,10 @@
     "label": "DataMéxico, receptionists, average monthly wage, Q1 2026",
     "url": "https://www.economia.gob.mx/datamexico/es/profile/occupation/recepcionistas-trabajadores-que-brindan-informacion-y-telefonistas",
     "range_label": "Paylab Mexico: 80% earn MXN 8,417-15,962 full time",
-    "range_url": "https://www.paylab.com/mx/salarios/administracion/recepcionista?lang=es"
+    "range_url": "https://www.paylab.com/mx/salarios/administracion/recepcionista?lang=es",
+    "parttime_min_mxn": 3500,
+    "parttime_max_mxn": 8000,
+    "range_note": "half of full-time wages: DataMéxico average about MXN 7,030; Paylab: 80% earn MXN 8,417-15,962"
   },
   "therapists_mx": {
     "count": 3360,
